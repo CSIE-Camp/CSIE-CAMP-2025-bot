@@ -1,16 +1,66 @@
 import discord
+from discord.ext import commands
 import random
 import datetime
 import asyncio
 import os
+import sys
 
 intents = discord.Intents.all()
 
-bot = discord.Client(intents=intents)
+bot = commands.Bot(intents=intents, command_prefix="?")
+
+msg_ch = None
 
 @bot.event
 async def on_ready():
     print(f'已登入為 {bot.user}')
+
+    while True:
+        inp = await asyncio.to_thread(input, "> ")
+        if inp == "exit":
+            await bot.close()
+            for task in asyncio.all_tasks():
+                task.cancel()
+            break
+        if msg_ch == None:
+            continue
+        ch = bot.get_channel(msg_ch)
+        assert ch != None
+        await ch.send(f"From Terminal: {inp}")
+    sys.exit()
+
+@bot.command()
+async def links(ctx):
+    table = {
+            "範例程式碼與指令": "https://github.com/CSIE-Camp/example-code-2025",
+            "官方網站": "https://camp.ntnucsie.info/",
+    }
+    title = "各種連結"
+    embed = discord.Embed(title=f"{title}", color=0x0000ff)
+    for (key, value) in table.items():
+        embed.add_field(name=key, value=value, inline=False)
+        pass
+    embed.set_footer(text=f"NTNU CSIE Camp 2025")
+    await ctx.send(embed=embed)
+
+
+@bot.command()
+async def set_ch(ctx, chid):
+    global msg_ch
+    try: 
+        msg_ch = int(chid)
+    except ValueError: 
+        await ctx.send("無效ID"); return 
+    
+    try: 
+        _a = bot.get_channel(chid)
+    except: 
+        await ctx.send("沒有這一個頻道")
+        return
+
+
+
 
 @bot.event
 async def on_message(message):
@@ -585,7 +635,9 @@ async def on_message(message):
         custom_time = message.content.split(" ") # mmddhhmm (測試用)
 
         datetime_now = datetime.datetime.now()
-        if (len(custom_time) and datetime_now < datetime.datetime(2025, 7, 1, 0, 0)):
+
+
+        if (len(custom_time) > 1 and datetime_now < datetime.datetime(2025, 7, 1, 0, 0)):
             try:
                 datetime_now = datetime.datetime.strptime(custom_time[1], "%m%d%H%M")
                 datetime_now = datetime_now.replace(year=2025)  # 假設課程在 2025 年
@@ -631,11 +683,14 @@ async def on_message(message):
             "黑客松 & 吃午餐", "黑客松報告", "閉幕", "結束"
         ]
 
+        current_lesson = None
         for lesson_idx in range(len(lesson_time)):
             if datetime_now > lesson_time[-(lesson_idx + 1)]:
                 current_lesson = -(lesson_idx + 1)
                 break
-
+        if current_lesson == None:
+            await message.channel.send("目前還沒有開始喔～")
+            return
 
         await message.channel.send(f"目前時間：{datetime_now.strftime('%Y-%m-%d %H:%M:%S')}\n"
                                    f"目前課程：{lesson_name[current_lesson]}\n"
@@ -729,4 +784,13 @@ async def startDrama(ctx):
 
     starfish_webhook.delete()
 
-bot.run(os.getenv("DISCORD_TOKEN"))  # 啟動機器人，使用環境變數中的 Discord Token
+def main():
+    try:
+        bot.run(os.getenv("DISCORD_TOKEN"))  # 啟動機器人，使用環境變數中的 Discord Token
+    except SystemExit:
+        print("Exited")
+        return
+    
+if __name__ == "__main__":
+    main()
+
