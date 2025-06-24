@@ -1,4 +1,5 @@
 from asyncio.tasks import wait_for
+
 import discord
 from discord.ext import commands
 import random
@@ -37,6 +38,7 @@ def init_game_user(user_id):
     game_user[user_id] = {}
     game_user[user_id]["lv"] = 1
     game_user[user_id]["exp"] = 0
+    game_user[user_id]["money"] = 0
     update_data()
 
 async def add_user_talking_exp(message, user_id):
@@ -101,7 +103,6 @@ async def set_ch(ctx, chid):
         await ctx.send("沒有這一個頻道")
         return
 
-
 # waitinglist = []
 response_buf = None
 
@@ -140,7 +141,6 @@ def emoji_to_int(emoji_str):
     # Check if the input emoji string is in the dictionary
     return emoji_to_num.get(emoji_str, None)
 
-
 @bot.command()
 async def mygo(ctx: commands.Context,*,cal):
     result = requests.get(f'https://mygoapi.miyago9267.com/mygo/img?keyword={cal}').json()
@@ -175,6 +175,64 @@ async def mygo(ctx: commands.Context,*,cal):
 
     await ask_message.delete()
 
+
+#簽到指令
+@bot.command()
+async def sign_in(ctx):
+    user_id = ctx.author.id
+    if not check_user(user_id):
+        init_game_user(user_id)
+    
+    _user = game_user[str(user_id)]
+    if "last_sign_in" in _user and _user["last_sign_in"] == datetime.date.today().isoformat():
+        await ctx.send(f"{ctx.author.mention} 你今天已經簽到過了！")
+        return
+    
+    _user["last_sign_in"] = datetime.date.today().isoformat()
+    money = random.randint(50, 100)  # 簽到獎勵籌碼隨機在50到100之間
+    _user["money"] += money
+    update_data()
+    
+    await ctx.send(f"{ctx.author.mention} 簽到成功，獲得 {money} 籌碼！")
+
+name = '拉霸'
+@bot.command(name=name)
+async def fuc(ctx,*,cal):
+        """
+        拉霸遊戲
+        """
+        symbols = [
+            "<:discord:1385577039838449704>", 
+            "<:python:1385577058184466502>", 
+            "<:block:1385577076865630300>", 
+            "<:mushroom:1385577154775089182>",
+            "<:dino:1385577110965321840>", 
+            "<:money:1385577138727686286>", 
+            "<:block:1385577076865630300>"
+        ]
+        if not check_user(ctx.author.id):
+            init_game_user(ctx.author.id)
+            await ctx.send(f"{ctx.author.mention} 已新增你的帳號，請先使用 ?sign_in 指令簽到獲得籌碼")
+        elif cal > game_user[str(ctx.author.id)]["money"]:
+            await ctx.send(f"{ctx.author.mention} 你目前的籌碼為 {game_user[str(ctx.author.id)]["money"]}，請輸入小於或等於此數量的籌碼")
+        elif cal % 10 != 0:
+            await ctx.send(f"{ctx.author.mention} 請輸入10的倍數的籌碼")
+        else:
+            for i in range(cal):
+                result = [random.choice(symbols) for _ in range(5)]
+                result_str = "".join(result)
+                await ctx.send(f"{result_str}")
+                max_count = max(result.count(symbol) for symbol in symbols)
+                if max_count == 5:
+                    await ctx.send(f"五個！！！天才！？")
+                elif max_count == 4:
+                    await ctx.send(f"四個！！很優秀！")
+                elif max_count == 3:
+                    await ctx.send(f"三個！不錯")
+                else:
+                    await ctx.send(f"菜就多練")
+
+        return
 
 @bot.event
 async def on_message(message):
@@ -722,33 +780,33 @@ async def on_message(message):
         embed.set_footer(text=f"今日適合你的一句話：{quote}")
         await message.channel.send(embed=embed)
 
-    if message.content == "?拉霸":
-        """
-        拉霸遊戲
-        """
-        symbols = [
-            "<:discord:1385577039838449704>", 
-            "<:python:1385577058184466502>", 
-            "<:block:1385577076865630300>", 
-            "<:mushroom:1385577154775089182>",
-            "<:dino:1385577110965321840>", 
-            "<:money:1385577138727686286>", 
-            "<:block:1385577076865630300>"
-        ]
-        result = [random.choice(symbols) for _ in range(5)]
-        result_str = "".join(result)
-        await message.channel.send(f"{result_str}")
-        max_count = max(result.count(symbol) for symbol in symbols)
-        if max_count == 5:
-            await message.channel.send(f"五個！！！天才！？")
-        elif max_count == 4:
-            await message.channel.send(f"四個！！很優秀！")
-        elif max_count == 3:
-            await message.channel.send(f"三個！不錯")
-        else:
-            await message.channel.send(f"菜就多練")
+    # if message.content == "?拉霸":
+    #     """
+    #     拉霸遊戲
+    #     """
+    #     symbols = [
+    #         "<:discord:1385577039838449704>", 
+    #         "<:python:1385577058184466502>", 
+    #         "<:block:1385577076865630300>", 
+    #         "<:mushroom:1385577154775089182>",
+    #         "<:dino:1385577110965321840>", 
+    #         "<:money:1385577138727686286>", 
+    #         "<:block:1385577076865630300>"
+    #     ]
+    #     result = [random.choice(symbols) for _ in range(5)]
+    #     result_str = "".join(result)
+    #     await message.channel.send(f"{result_str}")
+    #     max_count = max(result.count(symbol) for symbol in symbols)
+    #     if max_count == 5:
+    #         await message.channel.send(f"五個！！！天才！？")
+    #     elif max_count == 4:
+    #         await message.channel.send(f"四個！！很優秀！")
+    #     elif max_count == 3:
+    #         await message.channel.send(f"三個！不錯")
+    #     else:
+    #         await message.channel.send(f"菜就多練")
 
-        return
+    #     return
     
     if message.content.startswith("?查詢課表"):
         custom_time = message.content.split(" ") # mmddhhmm (測試用)
