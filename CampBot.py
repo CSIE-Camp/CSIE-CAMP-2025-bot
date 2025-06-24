@@ -7,12 +7,52 @@ import asyncio
 import os
 import sys
 import requests
+import json
 
 intents = discord.Intents.all()
 
 bot = commands.Bot(intents=intents, command_prefix="?")
 
 msg_ch = None
+
+json_name = 'user_data.json'
+
+with open(json_name, 'r') as f:
+    game_user = json.load(f)
+    print(game_user)
+
+def update_data():
+    with open(json_name, 'w') as f:
+        json.dump(game_user, f)
+
+def check_user(user_id):
+    user_id = str(user_id)
+    if game_user.get(user_id): 
+        print(game_user.get(user_id))
+        return True
+    return False
+
+def init_game_user(user_id):
+    user_id = str(user_id)
+    game_user[user_id] = {}
+    game_user[user_id]["lv"] = 1
+    game_user[user_id]["exp"] = 0
+    update_data()
+
+async def add_user_talking_exp(message, user_id):
+    user_id = str(user_id)
+    _user = game_user[user_id]
+    _user["exp"] += 2
+    await user_level_up(message, user_id)
+    update_data()
+
+async def user_level_up(message, user_id):
+    _user = game_user[user_id]
+    if _user["exp"] >= 10 * _user["lv"]:
+        _user["lv"] += 1
+        _user["exp"] = 0
+        await message.channel.send(f"恭喜 {message.author.mention} 升級到 lv.{_user["lv"]} !!")
+    
 
 @bot.event
 async def on_ready():
@@ -140,6 +180,11 @@ async def mygo(ctx: commands.Context,*,cal):
 async def on_message(message):
     if message.author.bot:  # 忽略bot自己傳的訊息
         return
+    
+    if not check_user(message.author.id):
+        init_game_user(message.author.id)
+    
+    await add_user_talking_exp(message, message.author.id)
     
     if message.content == "?抽籤":
         acg_quotes = [
