@@ -1,8 +1,8 @@
 import discord
 import random
 import datetime
-import keep_alive
 import asyncio
+import os
 
 intents = discord.Intents.all()
 
@@ -728,7 +728,5 @@ async def startDrama(ctx):
     await starfish_webhook.send("抽完籤我就回來啦，等我一下！", username=starfish_name, avatar_url=starfish_avatar)
 
     starfish_webhook.delete()
-
-keep_alive.keep_alive()
 
 bot.run(os.getenv("DISCORD_TOKEN"))  # 啟動機器人，使用環境變數中的 Discord Token
