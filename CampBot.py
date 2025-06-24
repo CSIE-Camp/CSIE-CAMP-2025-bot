@@ -1,5 +1,6 @@
 from asyncio.tasks import wait_for
-
+from dotenv import load_dotenv
+load_dotenv()
 import discord
 from discord.ext import commands
 import random
@@ -53,7 +54,7 @@ async def user_level_up(message, user_id):
     if _user["exp"] >= 10 * _user["lv"]:
         _user["lv"] += 1
         _user["exp"] = 0
-        await message.channel.send(f"恭喜 {message.author.mention} 升級到 lv.{_user["lv"]} !!")
+        await message.channel.send(f"恭喜 {message.author.mention} 升級到 lv.{_user['lv']} !!")
     
 
 @bot.event
@@ -195,6 +196,42 @@ async def sign_in(ctx):
     
     await ctx.send(f"{ctx.author.mention} 簽到成功，獲得 {money} 籌碼！")
 
+@bot.command()
+async def money_scoreboard(ctx):
+    """
+    顯示排行榜
+    """
+    if not check_user(ctx.author.id):
+        init_game_user(ctx.author.id)
+        await ctx.send(f"{ctx.author.mention} 已新增你的帳號，請先使用 ?sign_in 指令簽到獲得籌碼")
+    else:
+        sorted_users = sorted(game_user.items(), key=lambda x: x[1]["money"], reverse=True)
+        embed = discord.Embed(title="排行榜", color=0x00ff00)
+        
+        for i, (user_id, user_data) in enumerate(sorted_users[:10], start=1):
+            user = await bot.fetch_user(int(user_id))
+            embed.add_field(name=f"{i}. {user.name}", value=f"籌碼: {user_data['money']}", inline=False)
+        
+        await ctx.send(embed=embed)
+
+@bot.command()
+async def level_scoreboard(ctx):
+    """
+    顯示等級排行榜
+    """
+    if not check_user(ctx.author.id):
+        init_game_user(ctx.author.id)
+        await ctx.send(f"{ctx.author.mention} 已新增你的帳號，請先使用 ?sign_in 指令簽到獲得籌碼")
+    else:
+        sorted_users = sorted(game_user.items(), key=lambda x: x[1]["lv"], reverse=True)
+        embed = discord.Embed(title="等級排行榜", color=0x0000ff)
+        
+        for i, (user_id, user_data) in enumerate(sorted_users[:10], start=1):
+            user = await bot.fetch_user(int(user_id))
+            embed.add_field(name=f"{i}. {user.name}", value=f"等級: {user_data['lv']}", inline=False)
+        
+        await ctx.send(embed=embed)
+
 name = '拉霸'
 @bot.command(name=name)
 async def fuc(ctx,*,cal):
@@ -210,28 +247,32 @@ async def fuc(ctx,*,cal):
             "<:money:1385577138727686286>", 
             "<:block:1385577076865630300>"
         ]
-        if not check_user(ctx.author.id):
-            init_game_user(ctx.author.id)
-            await ctx.send(f"{ctx.author.mention} 已新增你的帳號，請先使用 ?sign_in 指令簽到獲得籌碼")
-        elif cal > game_user[str(ctx.author.id)]["money"]:
-            await ctx.send(f"{ctx.author.mention} 你目前的籌碼為 {game_user[str(ctx.author.id)]["money"]}，請輸入小於或等於此數量的籌碼")
-        elif cal % 10 != 0:
-            await ctx.send(f"{ctx.author.mention} 請輸入10的倍數的籌碼")
-        else:
-            for i in range(cal):
-                result = [random.choice(symbols) for _ in range(5)]
-                result_str = "".join(result)
-                await ctx.send(f"{result_str}")
-                max_count = max(result.count(symbol) for symbol in symbols)
-                if max_count == 5:
-                    await ctx.send(f"五個！！！天才！？")
-                elif max_count == 4:
-                    await ctx.send(f"四個！！很優秀！")
-                elif max_count == 3:
-                    await ctx.send(f"三個！不錯")
-                else:
-                    await ctx.send(f"菜就多練")
-
+        try:
+            cal = int(cal)
+            if not check_user(ctx.author.id):
+                init_game_user(ctx.author.id)
+                await ctx.send(f"{ctx.author.mention} 已新增你的帳號，請先使用 ?sign_in 指令簽到獲得籌碼")
+            elif cal > game_user[str(ctx.author.id)]["money"]:
+                await ctx.send(f"{ctx.author.mention} 你目前的籌碼為 {game_user[str(ctx.author.id)]['money']}，請輸入小於或等於此數量的籌碼")
+            elif cal % 10 != 0:
+                await ctx.send(f"{ctx.author.mention} 請輸入10的倍數的籌碼")
+            else:
+                for i in range(cal):
+                    result = [random.choice(symbols) for _ in range(5)]
+                    result_str = "".join(result)
+                    await ctx.send(f"{result_str}")
+                    max_count = max(result.count(symbol) for symbol in symbols)
+                    if max_count == 5:
+                        await ctx.send(f"五個！！！天才！？")
+                    elif max_count == 4:
+                        await ctx.send(f"四個！！很優秀！")
+                    elif max_count == 3:
+                        await ctx.send(f"三個！不錯")
+                    else:
+                        await ctx.send(f"菜就多練")
+        except ValueError:
+            await ctx.send(f"{ctx.author.mention} 請輸入有效的籌碼數量")
+            return
         return
 
 @bot.event
