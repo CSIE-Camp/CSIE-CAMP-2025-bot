@@ -1,5 +1,6 @@
 from asyncio.tasks import wait_for
-
+from dotenv import load_dotenv
+load_dotenv()
 import discord
 from discord.ext import commands
 import random
@@ -53,7 +54,7 @@ async def user_level_up(message, user_id):
     if _user["exp"] >= 10 * _user["lv"]:
         _user["lv"] += 1
         _user["exp"] = 0
-        await message.channel.send(f"恭喜 {message.author.mention} 升級到 lv.{_user["lv"]} !!")
+        await message.channel.send(f"恭喜 {message.author.mention} 升級到 lv.{_user['lv']} !!")
     
 
 @bot.event
