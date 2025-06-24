@@ -197,7 +197,7 @@ async def sign_in(ctx):
     await ctx.send(f"{ctx.author.mention} 簽到成功，獲得 {money} 籌碼！")
 
 @bot.command(name="拉霸")
-async def fuc(ctx,*,cal):
+async def slot(ctx,*,cal):
     """
     拉霸遊戲
     """
