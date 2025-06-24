@@ -5,6 +5,7 @@ import datetime
 import asyncio
 import os
 import sys
+import requests
 
 intents = discord.Intents.all()
 
@@ -59,7 +60,11 @@ async def set_ch(ctx, chid):
         await ctx.send("沒有這一個頻道")
         return
 
-
+@bot.command()
+async def mygo(ctx,*,cal):
+    result = requests.get(f'https://mygoapi.miyago9267.com/mygo/img?keyword={cal}').json()
+    print(result)
+    await ctx.send(result['urls'][0]['url'])
 
 
 @bot.event
