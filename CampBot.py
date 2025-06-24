@@ -6,6 +6,7 @@ import asyncio
 import os
 import sys
 import requests
+import json
 
 intents = discord.Intents.all()
 
@@ -13,30 +14,31 @@ bot = commands.Bot(intents=intents, command_prefix="?")
 
 msg_ch = None
 
-bot.game_user = {}
+with open('user_data.json') as f:
+    game_user = json.load(f)
+    print(game_user)
 
 def check_user(user_id):
     user_id = str(user_id)
-    if bot.game_user.get(user_id): 
-        print(bot.game_user.get(user_id))
+    if game_user.get(user_id): 
+        print(game_user.get(user_id))
         return True
     return False
-        
 
 def init_game_user(user_id):
     user_id = str(user_id)
-    bot.game_user[user_id] = {}
-    bot.game_user[user_id]["lv"] = 1
-    bot.game_user[user_id]["exp"] = 0
+    game_user[user_id] = {}
+    game_user[user_id]["lv"] = 1
+    game_user[user_id]["exp"] = 0
 
 async def add_user_talking_exp(message, user_id):
     user_id = str(user_id)
-    _user = bot.game_user[user_id]
+    _user = game_user[user_id]
     _user["exp"] += 2
     await user_level_up(message, user_id)
 
 async def user_level_up(message, user_id):
-    _user = bot.game_user[user_id]
+    _user = game_user[user_id]
     if _user["exp"] >= 10 * _user["lv"]:
         _user["lv"] += 1
         _user["exp"] = 0
