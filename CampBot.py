@@ -1,3 +1,4 @@
+from asyncio.tasks import wait_for
 import discord
 from discord.ext import commands
 import random
@@ -60,11 +61,79 @@ async def set_ch(ctx, chid):
         await ctx.send("沒有這一個頻道")
         return
 
+
+# waitinglist = []
+response_buf = None
+
+
+
 @bot.command()
-async def mygo(ctx,*,cal):
+async def tt(ctx: commands.Context):
+    msg = await ctx.send("Test")
+    # waitinglist.append(ctx.message.author.id)
+
+    await bot.wait_for("custom_tt")
+    await msg.delete()
+    await ctx.send("deleted sth...")
+
+    
+numerics = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight"]
+
+# Dictionary mapping emoji digits to their corresponding integers
+emoji_to_num = {
+    '0️⃣': 0,
+    '1️⃣': 1,
+    '2️⃣': 2,
+    '3️⃣': 3,
+    '4️⃣': 4,
+    '5️⃣': 5,
+    '6️⃣': 6,
+    '7️⃣': 7,
+    '8️⃣': 8,
+    '9️⃣': 9
+}
+
+
+emoji_digits = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
+
+def emoji_to_int(emoji_str):
+    # Check if the input emoji string is in the dictionary
+    return emoji_to_num.get(emoji_str, None)
+
+
+@bot.command()
+async def mygo(ctx: commands.Context,*,cal):
     result = requests.get(f'https://mygoapi.miyago9267.com/mygo/img?keyword={cal}').json()
+
+    res_texts = [option['alt'] for option in result['urls']]
+    print(res_texts)
+
+    embed = discord.Embed(title="Select!", color=0x0000ff)
+    for (index, res_text) in enumerate(res_texts):
+        embed.add_field(name=index, value=res_text, inline=False)
+
+    ask_message = await ctx.send(embed=embed)
+
+    for i in range(len(res_texts)):
+        await ask_message.add_reaction(emoji_digits[i])
+
+    def check(r: discord.Reaction, u: discord.User):
+        print(r.__str__(),u)
+        return not u.bot and r.message == ask_message and emoji_to_int(r.__str__()) != None
+
+    (reaction, user) = await bot.wait_for("reaction_add", check=check)
+
+    assert isinstance(reaction, discord.Reaction)
+    print(reaction.emoji.__str__())
+
+    index = emoji_to_int(reaction.__str__())
+
+
     print(result)
-    await ctx.send(result['urls'][0]['url'])
+
+    await ctx.send(result['urls'][index]['url'])
+
+    await ask_message.delete()
 
 
 @bot.event
