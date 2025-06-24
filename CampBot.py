@@ -14,9 +14,15 @@ bot = commands.Bot(intents=intents, command_prefix="?")
 
 msg_ch = None
 
-with open('user_data.json') as f:
+json_name = 'user_data.json'
+
+with open(json_name, 'r') as f:
     game_user = json.load(f)
     print(game_user)
+
+def update_data():
+    with open(json_name, 'w') as f:
+        json.dump(game_user, f)
 
 def check_user(user_id):
     user_id = str(user_id)
@@ -30,12 +36,14 @@ def init_game_user(user_id):
     game_user[user_id] = {}
     game_user[user_id]["lv"] = 1
     game_user[user_id]["exp"] = 0
+    update_data()
 
 async def add_user_talking_exp(message, user_id):
     user_id = str(user_id)
     _user = game_user[user_id]
     _user["exp"] += 2
     await user_level_up(message, user_id)
+    update_data()
 
 async def user_level_up(message, user_id):
     _user = game_user[user_id]
