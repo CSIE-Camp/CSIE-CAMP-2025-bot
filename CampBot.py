@@ -177,7 +177,7 @@ async def mygo(ctx: commands.Context,*,cal):
 
 
 #簽到指令
-@bot.command()
+@bot.command(name="簽到")
 async def sign_in(ctx):
     user_id = ctx.author.id
     if not check_user(user_id):
@@ -195,44 +195,74 @@ async def sign_in(ctx):
     
     await ctx.send(f"{ctx.author.mention} 簽到成功，獲得 {money} 籌碼！")
 
-name = '拉霸'
-@bot.command(name=name)
+@bot.command(name="拉霸")
 async def fuc(ctx,*,cal):
-        """
-        拉霸遊戲
-        """
-        symbols = [
-            "<:discord:1385577039838449704>", 
-            "<:python:1385577058184466502>", 
-            "<:block:1385577076865630300>", 
-            "<:mushroom:1385577154775089182>",
-            "<:dino:1385577110965321840>", 
-            "<:money:1385577138727686286>", 
-            "<:block:1385577076865630300>"
-        ]
-        if not check_user(ctx.author.id):
-            init_game_user(ctx.author.id)
-            await ctx.send(f"{ctx.author.mention} 已新增你的帳號，請先使用 ?sign_in 指令簽到獲得籌碼")
-        elif cal > game_user[str(ctx.author.id)]["money"]:
-            await ctx.send(f"{ctx.author.mention} 你目前的籌碼為 {game_user[str(ctx.author.id)]["money"]}，請輸入小於或等於此數量的籌碼")
-        elif cal % 10 != 0:
-            await ctx.send(f"{ctx.author.mention} 請輸入10的倍數的籌碼")
-        else:
-            for i in range(cal):
-                result = [random.choice(symbols) for _ in range(5)]
-                result_str = "".join(result)
-                await ctx.send(f"{result_str}")
-                max_count = max(result.count(symbol) for symbol in symbols)
-                if max_count == 5:
-                    await ctx.send(f"五個！！！天才！？")
-                elif max_count == 4:
-                    await ctx.send(f"四個！！很優秀！")
-                elif max_count == 3:
-                    await ctx.send(f"三個！不錯")
-                else:
-                    await ctx.send(f"菜就多練")
-
+    """
+    拉霸遊戲
+    """
+    try:
+        cal = int(cal)
+    except TypeError:
+        await ctx.send(f"{cal} 不能當作籌碼的數量啦=m=")
         return
+    
+    current_money = game_user[str(ctx.author.id)]["money"]
+    symbols = [
+        "<:discord:1385577039838449704>", 
+        "<:python:1385577058184466502>", 
+        "<:block:1385577076865630300>", 
+        "<:mushroom:1385577154775089182>",
+        "<:dino:1385577110965321840>", 
+        "<:money:1385577138727686286>", 
+        "<:block:1385577076865630300>"
+    ]
+    if not check_user(ctx.author.id):
+        init_game_user(ctx.author.id)
+    elif cal > current_money:
+        await ctx.send(f"你現在只有 {current_money} 元，你卻想花 {cal} 元，我們不支援賒帳系統啦>.<")
+        return
+
+    result = [random.choice(symbols) for _ in range(5)]
+    result_str = "".join(result)
+    message = ctx.message
+    author_mention = message.author.mention
+    author_name = message.author.name
+    await message.channel.send(f"{result_str}")
+    max_count = max(result.count(symbol) for symbol in symbols)
+    if max_count == 5:
+        addtional_messages = ["原...原來，你的幸運值已經突破系統上限了>.<", "是百年難得一見的拉霸奇才！", "你該不會駭入系統了吧！？"]
+        addtional_message = random.choice(addtional_messages)
+        await message.channel.send(f"{author_mention} 恭喜你中了五個！！！賺了 {100 * cal} 元！{addtional_message}")
+
+        current_money += 100 * cal
+
+    elif max_count == 4:
+        addtional_messages = ["搞不好能遇到好事喔~", "下一代拉霸幫幫主就是你:O", "去找別人單挑猜拳吧"]
+        addtional_message = random.choice(addtional_messages)
+        await message.channel.send(f"{author_mention} 中了四個！！賺了 {10 * cal} 元！{addtional_message}")
+
+        current_money += 10 * cal
+
+    elif max_count == 3:
+        await message.channel.send(f"{author_name} 中了三個！賺了 {cal} 元！運氣還不錯～")
+
+        current_money += cal
+
+    elif max_count == 2:
+        await message.channel.send(f"有兩個一樣，但還是損失了 {cal//2} 元...")
+
+        current_money -= cal//2
+
+    else:
+        addtional_messages = ["只能說...菜就多練=v=", "也算變相的運氣好...啦T-T", "恭喜你把壞運用光了q-q"]
+        addtional_message = random.choice(addtional_messages)
+        await message.channel.send(f"沒有相同的...損失 {cal} 元...{addtional_message}")
+
+        current_money -= cal
+
+    game_user[str(ctx.author.id)]["money"] = current_money
+    update_data()
+    return
 
 @bot.event
 async def on_message(message):
@@ -730,42 +760,12 @@ async def on_message(message):
         embed = discord.Embed(title=f"{content}", color=0x00ff00)
         embed.set_footer(text=f"今日適合你的一句話：{quote}")
         await message.channel.send(embed=embed)
-
-    # if message.content == "?拉霸":
-    #     """
-    #     拉霸遊戲
-    #     """
-    #     symbols = [
-    #         "<:discord:1385577039838449704>", 
-    #         "<:python:1385577058184466502>", 
-    #         "<:block:1385577076865630300>", 
-    #         "<:mushroom:1385577154775089182>",
-    #         "<:dino:1385577110965321840>", 
-    #         "<:money:1385577138727686286>", 
-    #         "<:block:1385577076865630300>"
-    #     ]
-    #     result = [random.choice(symbols) for _ in range(5)]
-    #     result_str = "".join(result)
-    #     await message.channel.send(f"{result_str}")
-    #     max_count = max(result.count(symbol) for symbol in symbols)
-    #     if max_count == 5:
-    #         await message.channel.send(f"五個！！！天才！？")
-    #     elif max_count == 4:
-    #         await message.channel.send(f"四個！！很優秀！")
-    #     elif max_count == 3:
-    #         await message.channel.send(f"三個！不錯")
-    #     else:
-    #         await message.channel.send(f"菜就多練")
-
-    #     return
     
     if message.content.startswith("?查詢課表"):
         custom_time = message.content.split(" ") # mmddhhmm (測試用)
 
         datetime_now = datetime.datetime.now()
-
-
-        if (len(custom_time) > 1 and datetime_now < datetime.datetime(2025, 7, 1, 0, 0)):
+        if (len(custom_time) and datetime_now < datetime.datetime(2025, 7, 1, 0, 0)):
             try:
                 datetime_now = datetime.datetime.strptime(custom_time[1], "%m%d%H%M")
                 datetime_now = datetime_now.replace(year=2025)  # 假設課程在 2025 年
@@ -811,14 +811,11 @@ async def on_message(message):
             "黑客松 & 吃午餐", "黑客松報告", "閉幕", "結束"
         ]
 
-        current_lesson = None
         for lesson_idx in range(len(lesson_time)):
             if datetime_now > lesson_time[-(lesson_idx + 1)]:
                 current_lesson = -(lesson_idx + 1)
                 break
-        if current_lesson == None:
-            await message.channel.send("目前還沒有開始喔～")
-            return
+
 
         await message.channel.send(f"目前時間：{datetime_now.strftime('%Y-%m-%d %H:%M:%S')}\n"
                                    f"目前課程：{lesson_name[current_lesson]}\n"
@@ -830,28 +827,29 @@ async def on_message(message):
             addtional_messages = ["現在是凌晨耶:O，快去睡覺", "~~這麼爆肝，很有成為工程師的淺力喔~~", "你...怎麼那麼晚還在想我(/////)"]
 
         if lesson_name[current_lesson] == "報到":
-            addtional_messages = ["歡迎來到資工營！", "居然有人已經發現這個功能了"]
+            addtional_messages = ["歡迎來到資工營！", "居然有人已經發現這個功能了", "我以為這裡是主控台ㄟ，你怎麼闖進來的"]
 
         if lesson_name[current_lesson] == "開幕":
-            addtional_messages = ["愉快的資工營終於開始了~", "我以為這裡是主控台ㄟ，"]
+            addtional_messages = ["愉快的資工營終於開始了~", "開戲明明很精采鴨，我的魅力那麼高嗎(////)"]
 
         if lesson_name[current_lesson] == "午餐時間":
-            addtional_messages = ["好耶，是吃飯時間，快樂:D"]
+            addtional_messages = ["吃飯時間>v<", "有沒有順便帶我的午餐來0.0"]
 
         if lesson_name[current_lesson] == "晚餐時間":
-            addtional_messages = ["晚餐吃得飽，隔天精神好0v0"]
+            addtional_messages = ["晚餐吃得飽，隔天精神好0v0", "不...不要偷看我吃晚餐(>////<)"]
 
         if lesson_name[current_lesson] == "晚上活動":
-            addtional_messages = ["現在正在活動，別跟我聊天了啦> <"]
+            addtional_messages = ["現在正在活動，別跟我聊天了啦> <", "我也正在享受活動~猜猜我在哪~"]
 
         remain_time = int(((lesson_time[current_lesson + 1] - datetime_now).seconds) / 60)
         if lesson_name[current_lesson] == "黑客松 & 吃午餐":
+            addtional_messages = ["我的想法一定超有創意，可惜我不能講話( •̀ ω •́ )✧", "黑客松加油~"]
             if remain_time < 60:
-                addtional_messages = ["最後衝刺！加油加油！"]
+                addtional_messages = ["最後衝刺！加油加油！", "你想問我要怎麼做嗎，我才不會告訴你> <"]
             elif remain_time < 30:
-                addtional_messages = [""]
+                addtional_messages = ["最後衝刺！加油加油！", "你們可以的！", "時間快不夠了，我來偷偷幫你吧~\n...阿...我忘記我沒有手了> <"]
             elif remain_time < 10:
-                addtional_messages = ["等等...為什麼你還有閒情逸致跟我聊天=v="]
+                addtional_messages = ["等等...為什麼你還有閒情逸致跟我聊天=v=", "幫我撐 10 分鐘"]
 
         addtional_message = random.choice(addtional_messages)
         await message.channel.send(addtional_message)
@@ -872,7 +870,7 @@ async def startDrama(ctx):
     starfish_avatar = ctx.guild.get_member(825730483601276929).avatar.url
     starfish_name = ctx.guild.get_member(825730483601276929).name
 
-    names = ["第一小隊", "第二小隊", "第三小隊", "第四小隊", "第五小隊", "第六小隊"]
+    names = ["一番賞", "二靈古堡", "動物三友會", "使出 Z 招四", "五敵鐵金剛", "六界玩家"]
     random.shuffle(names)
 
     embed = discord.Embed(title="抽籤結果", description="以下是報告的順序", color=0xff0000)
