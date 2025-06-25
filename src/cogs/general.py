@@ -93,8 +93,7 @@ class General(commands.Cog):
     async def test_mg(self, ctx: commands.Context, keyword: str):
         """tt"""
         res = await get_mygo_imgs(keyword)
-        print(res)
-
+        print(res.__str__())
         await ctx.send(f"```json\n{res.__str__()}\n```")
 
     @commands.command()
