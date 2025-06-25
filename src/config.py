@@ -14,9 +14,53 @@ COGS_DIR = "src/cogs"
 USER_DATA_FILE = os.getenv("USER_DATA_FILE", "user_data.json")
 
 # --- Channel IDs ---
-MYGO_CHANNEL_ID = int(os.getenv("MYGO_CHANNEL_ID")) if os.getenv("MYGO_CHANNEL_ID") != None else None
-REWARD_CHANNEL_ID = int(os.getenv("REWARD_CHANNEL_ID")) if os.getenv("REWARD_CHANNEL_ID") != None else None
+MYGO_CHANNEL_ID = (
+    int(os.getenv("MYGO_CHANNEL_ID")) if os.getenv("MYGO_CHANNEL_ID") != None else None
+)
+REWARD_CHANNEL_ID = (
+    int(os.getenv("REWARD_CHANNEL_ID"))
+    if os.getenv("REWARD_CHANNEL_ID") != None
+    else None
+)
+EASTER_EGG_CHANNEL_ID = (
+    int(os.getenv("EASTER_EGG_CHANNEL_ID"))
+    if os.getenv("EASTER_EGG_CHANNEL_ID") != None
+    else None
+)
+
+# --- Style Transfer Channel IDs ---
+STYLE_TRANSFER_WENYAN_CHANNEL_ID = (
+    int(os.getenv("STYLE_TRANSFER_WENYAN_CHANNEL_ID"))
+    if os.getenv("STYLE_TRANSFER_WENYAN_CHANNEL_ID") != None
+    else None
+)
+STYLE_TRANSFER_CATGIRL_CHANNEL_ID = (
+    int(os.getenv("STYLE_TRANSFER_CATGIRL_CHANNEL_ID"))
+    if os.getenv("STYLE_TRANSFER_CATGIRL_CHANNEL_ID") != None
+    else None
+)
+STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID = (
+    int(os.getenv("STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID"))
+    if os.getenv("STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID") != None
+    else None
+)
+STYLE_TRANSFER_TSUNDERE_CHANNEL_ID = (
+    int(os.getenv("STYLE_TRANSFER_TSUNDERE_CHANNEL_ID"))
+    if os.getenv("STYLE_TRANSFER_TSUNDERE_CHANNEL_ID") != None
+    else None
+)
+
+# --- Style Transfer Webhook URLs ---
+STYLE_TRANSFER_WENYAN_WEBHOOK_URL = os.getenv("STYLE_TRANSFER_WENYAN_WEBHOOK_URL")
+STYLE_TRANSFER_CATGIRL_WEBHOOK_URL = os.getenv("STYLE_TRANSFER_CATGIRL_WEBHOOK_URL")
+STYLE_TRANSFER_CHUUNIBYOU_WEBHOOK_URL = os.getenv(
+    "STYLE_TRANSFER_CHUUNIBYOU_WEBHOOK_URL"
+)
+STYLE_TRANSFER_TSUNDERE_WEBHOOK_URL = os.getenv("STYLE_TRANSFER_TSUNDERE_WEBHOOK_URL")
+
 
 # --- DEBUG FLAG (CURRENTLY NO IMPLELEMTATION, CAN BE IGNORED) ---
 DEBUG = True if os.getenv("DEBUG") == "True" else None
-DEVELOPER_ID = int(os.getenv("DEVELOPER_ID")) if os.getenv("DEVELOPER_ID") != None else None
+DEVELOPER_ID = (
+    int(os.getenv("DEVELOPER_ID")) if os.getenv("DEVELOPER_ID") != None else None
+)

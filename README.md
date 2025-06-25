@@ -1,100 +1,119 @@
-# Discord Bot - 師大資工營 2025
+# NTNU CSIE Camp 2025 Public Bot
 
-這是一個為師大資工營設計的多功能 Discord 機器人專案。它採用了模組化的架構，將不同的功能分離到各自的 Cog 中，並透過統一的設定檔進行管理，以提高程式碼的可讀性、可維護性和擴充性。
+This is the official Discord bot for the NTNU CSIE Camp 2025. It's designed to enhance the camp experience with a variety of fun and interactive features, including multiple AI-powered functions.
 
-## ✨ 功能亮點
+## Features
 
--   **🎲 遊戲與經濟系統**
+### 般指令
 
-    -   **每日簽到**：使用者可以透過 `?sign_in` 或 `?簽到` 進行每日簽到，獲得金錢獎勵，連續簽到有額外獎勵。
-    -   **經驗值系統**：在頻道中發言可以獲得經驗值並升級。
-    -   **個人資料**：使用 `?profile`、`?p` 或 `?資料` 查詢自己或他人的等級、經驗與金錢。
-    -   **拉霸機**：使用 `?slot <金額>` 或 `?拉霸 <金額>` 指令，體驗刺激的拉霸遊戲，根據相同圖案的數量決定輸贏與倍率。
-    -   **限時搶錢**：定時在特定頻道出現的搶錢活動，增加伺服器活躍度。
+-   **`?profile` / `?資料`**: 查詢自己或他人等級、經驗值、金錢等個人資料。
+-   **`?links`**: 顯示營隊相關的實用連結。
+-   **`?draw` / `?抽籤`**: 每日抽籤，獲得隨機運勢與動漫語錄，並生成運勢圖。
+-   **`?schedule` / `?查詢課表`**: 查詢當前或指定時間的營隊課程表。
 
--   **🤖 AI 智慧互動**
+### 遊戲與經濟系統
 
-    -   **LLM 聊天**：當有人在頻道中提及 (mention) 機器人時，它會使用 Google Gemini 模型進行智慧回應。
-    -   **MyGo 圖片搜尋**：在指定頻道中，輸入關鍵字即可搜尋《It's MyGO!!!!!》的相關梗圖。
+-   **經驗值與等級**: 在伺服器中聊天即可獲得經驗值並升級。
+-   **`?sign_in` / `?簽到`**: 每日簽到領取金錢，連續簽到天數越多，獎勵越豐厚！
+-   **`?slot <amount>` / `?拉霸 <金額>`**: 試試手氣，玩拉霸機贏取（或輸掉）金錢。
+-   **定時金錢活動**: 特定時間會出現特殊活動，把握機會賺取額外金錢！
 
--   **🔧 通用與管理工具**
-    -   **抽籤運勢**：使用 `?抽籤` 指令，獲得今日運勢和一句動漫名言，並由 AI 生成專屬配圖。
-    -   **動態重載**：管理員可以使用 `?reload <cog_name>` 指令，在不重啟機器人的情況下，即時更新功能模組。
+### 彩蛋系統
 
-## 📂 專案結構
+-   **`?egg` / `?彩蛋`**: 在伺服器中輸入隱藏的關鍵字即可觸發彩蛋。使用此指令可查看已收集的彩蛋。
 
-```
-.env                # 儲存所有機密資訊與環境變數
-README.md           # 就是你現在正在看的這個檔案
-requirement.txt     # 專案所需的 Python 套件
-data/
-  ├── acg_quotes.json # 抽籤系統所使用的名言資料
-  └── user_data.json  # 儲存所有使用者的等級、金錢等資料
-src/
-  ├── __init__.py
-  ├── camp_bot.py     # 機器人的主程式進入點
-  ├── config.py       # 讀取 .env 並提供全域設定
-  ├── cogs/           # 存放所有功能模組 (Cogs)
-  │   ├── __init__.py
-  │   ├── admin.py      # 管理員指令
-  │   ├── ai.py         # AI 相關功能 (LLM, MyGo)
-  │   ├── game_events.py# 遊戲事件處理 (如：發言加經驗)
-  │   ├── general.py    # 通用指令 (抽籤, 連結)
-  │   ├── schedule.py   # 課表查詢
-  │   ├── sign_in.py    # 簽到系統
-  │   ├── slot.py       # 拉霸機遊戲
-  │   └── tasks.py      # 背景排程任務 (限時搶錢)
-  └── utils/          # 存放共用的工具函式
-      ├── __init__.py
-      ├── image_gen.py  # AI 圖片生成工具
-      └── user_data.py  # 使用者資料管理
-```
+### AI 智慧功能
 
-## 🚀 安裝與設定
+-   **AI 聊天**: 在任何頻道 **`@機器人`** 即可與 AI 進行自由對話。
+-   **MyGo 專屬頻道**:
+    -   在指定頻道輸入關鍵字，機器人會自動搜尋相關的 MyGo!!!!! 角色圖片。
+    -   如果找不到對應圖片，AI 會化身為 MyGo 角色，並以該角色的口吻回覆你一句新的台詞。
+-   **風格轉換頻道**:
+    -   在特定頻道發言，機器人會自動將你的訊息轉換為指定風格，並以該風格的角色發言。
+    -   此功能透過 Webhook 運作，會以自訂的名稱與頭像發送訊息，並刪除你的原始訊息。
+    -   目前支援風格：
+        -   **文言文**: 化身「東漢書院諸葛亮」。
+        -   **貓娘**: 化身「你的專屬貓娘」。
+        -   **中二**: 化身「漆黑的墮天使」。
+        -   **傲嬌**: 化身「傲嬌大小姐」。
 
-1.  **複製專案**
+### 管理員指令 (僅限工作人員)
+
+-   **`?reload <cog>`**: 重新載入指定的機器人功能模組 (僅限 Bot 擁有者)。
+-   **`?reset_flags`**: 重設所有使用者的彩蛋尋獲狀態 (僅限管理員)。
+
+## 安裝與設定
+
+1.  **複製專案庫**:
 
     ```bash
-    git clone https://github.com/CSIE-Camp/camp-public-bot.git
+    git clone https://github.com/your-username/camp-public-bot.git
     cd camp-public-bot
     ```
 
-2.  **安裝依賴套件**
-    建議在虛擬環境中進行安裝。
+2.  **安裝依賴套件**:
 
     ```bash
     pip install -r requirement.txt
     ```
 
-3.  **設定環境變數**
-    複製 `.env.example` (如果有的話) 或手動建立一個名為 `.env` 的新檔案，並填入以下內容：
+3.  **設定環境變數**:
 
-    ```properties
-    # --- 機器人金鑰 ---
-    DISCORD_TOKEN="你的 Discord Bot Token"
+    -   將 `.env.example` 檔案複製並重新命名為 `.env`。
+    -   依照下方的說明填寫 `.env` 檔案中的所有變數。
 
-    # --- API 金鑰 ---
-    GEMINI_API_KEY="你的 Google Gemini API Key"
-    NGROK_URL="你的圖片生成服務 Ngrok URL"
-
-    # --- 檔案路徑 (通常不需要修改) ---
-    USER_DATA_FILE="data/user_data.json"
-
-    # --- 頻道 ID ---
-    # 將 ID 換成你伺服器中對應的頻道 ID
-    MYGO_CHANNEL_ID="123456789012345678"
-    REWARD_CHANNEL_ID="123456789012345678"
+4.  **啟動機器人**:
+    ```bash
+    python src/camp_bot.py
     ```
 
-    > **如何取得 Discord 頻道 ID？**
-    > 進入 Discord -> 使用者設定 -> 進階 -> 開啟「開發者模式」。然後在頻道上按右鍵，選擇「複製頻道 ID」。
+### 如何設定 `.env` 檔案
 
-## ▶️ 如何執行
+-   `DISCORD_TOKEN`: 你的 Discord 機器人 Token。前往 [Discord Developer Portal](https://discord.com/developers/applications) 建立應用程式並取得 Token。
+-   `GEMINI_API_KEY`: 你的 Google AI (Gemini) API 金鑰。前往 [Google AI Studio](https://aistudio.google.com/app/apikey) 取得金鑰。
 
-**請務必**從專案的根目錄 (`camp-public-bot`) 執行以下指令來啟動機器人。這能確保 Python 正確地將 `src` 視為一個可匯入的套件。
+-   **頻道 ID (`*_CHANNEL_ID`)**:
+
+    1.  在 Discord 中，前往「使用者設定」 -> 「進階」，並**開啟「開發者模式」**。
+    2.  在任何你想要設定的頻道上按右鍵，選擇「**複製頻道 ID**」。
+    3.  將複製的 ID 貼到對應的變數中。
+
+-   **風格轉換 Webhook (`*_WEBHOOK_URL`)**:
+    1.  前往你為特定風格（如「文言文」）設定的頻道。
+    2.  點擊頻道旁的齒輪圖示，進入「整合」 -> 「Webhook」。
+    3.  建立一個新的 Webhook，你可以自訂名稱與頭像（但程式會覆蓋它們）。
+    4.  點擊「**複製 Webhook URL**」，並將其貼到 `.env` 中對應的變數（例如 `STYLE_TRANSFER_WENYAN_WEBHOOK_URL`）。
+    5.  為所有四種風格重複此步驟。
+
+## 設定檔範例 (`.env.example`)
+
+請參考 `.env.example` 檔案來設定你的環境變數。
 
 ```bash
-python -m src.camp_bot
+# --- API Keys ---
+DISCORD_TOKEN=
+GEMINI_API_KEY=
+
+# --- File Paths ---
+USER_DATA_FILE=data/user_data.json
+
+# --- Channel IDs ---
+# AI-powered channels
+MYGO_CHANNEL_ID=
+# Style transfer channels
+STYLE_TRANSFER_WENYAN_CHANNEL_ID=
+STYLE_TRANSFER_CATGIRL_CHANNEL_ID=
+STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID=
+STYLE_TRANSFER_TSUNDERE_CHANNEL_ID=
+# Other feature channels
+REWARD_CHANNEL_ID=
+EASTER_EGG_CHANNEL_ID=
+
+# --- Style Transfer Webhook URLs ---
+STYLE_TRANSFER_WENYAN_WEBHOOK_URL=
+STYLE_TRANSFER_CATGIRL_WEBHOOK_URL=
+STYLE_TRANSFER_CHUUNIBYOU_WEBHOOK_URL=
+STYLE_TRANSFER_TSUNDERE_WEBHOOK_URL=
 ```
 
-當您在終端機看到 `已成功登入為: YourBotName` 的訊息時，表示機器人已成功啟動並上線。
+Have fun!

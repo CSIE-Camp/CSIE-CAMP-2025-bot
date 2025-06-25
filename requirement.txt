@@ -1,5 +1,5 @@
 python-dotenv
 discord.py
 requests
-google-generativeai
+google-genai
 pydantic
