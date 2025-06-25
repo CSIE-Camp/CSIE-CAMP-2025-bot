@@ -10,6 +10,8 @@ import os
 import sys
 import requests
 import json
+from google import genai
+from pydantic import BaseModel
 
 intents = discord.Intents.all()
 
@@ -209,39 +211,39 @@ def emoji_to_int(emoji_str):
     # Check if the input emoji string is in the dictionary
     return emoji_to_num.get(emoji_str, None)
 
-@bot.command()
-async def mygo(ctx: commands.Context,*,cal):
-    result = requests.get(f'https://mygoapi.miyago9267.com/mygo/img?keyword={cal}').json()
+#@bot.command()
+# async def mygo(ctx: commands.Context,*,cal):
+#     result = requests.get(f'https://mygoapi.miyago9267.com/mygo/img?keyword={cal}').json()
 
-    res_texts = [option['alt'] for option in result['urls']]
-    print(res_texts)
+#     res_texts = [option['alt'] for option in result['urls']]
+#     print(res_texts)
 
-    embed = discord.Embed(title="Select!", color=0x0000ff)
-    for (index, res_text) in enumerate(res_texts):
-        embed.add_field(name=index, value=res_text, inline=False)
+#     embed = discord.Embed(title="Select!", color=0x0000ff)
+#     for (index, res_text) in enumerate(res_texts):
+#         embed.add_field(name=index, value=res_text, inline=False)
 
-    ask_message = await ctx.send(embed=embed)
+#     ask_message = await ctx.send(embed=embed)
 
-    for i in range(len(res_texts)):
-        await ask_message.add_reaction(emoji_digits[i])
+#     for i in range(len(res_texts)):
+#         await ask_message.add_reaction(emoji_digits[i])
 
-    def check(r: discord.Reaction, u: discord.User):
-        print(r.__str__(),u)
-        return not u.bot and r.message == ask_message and emoji_to_int(r.__str__()) != None
+#     def check(r: discord.Reaction, u: discord.User):
+#         print(r.__str__(),u)
+#         return not u.bot and r.message == ask_message and emoji_to_int(r.__str__()) != None
 
-    (reaction, user) = await bot.wait_for("reaction_add", check=check)
+#     (reaction, user) = await bot.wait_for("reaction_add", check=check)
 
-    assert isinstance(reaction, discord.Reaction)
-    print(reaction.emoji.__str__())
+#     assert isinstance(reaction, discord.Reaction)
+#     print(reaction.emoji.__str__())
 
-    index = emoji_to_int(reaction.__str__())
+#     index = emoji_to_int(reaction.__str__())
 
 
-    print(result)
+#     print(result)
 
-    await ctx.send(result['urls'][index]['url'])
+#     await ctx.send(result['urls'][index]['url'])
 
-    await ask_message.delete()
+#     await ask_message.delete()
 
 
 # 簽到指令
@@ -343,7 +345,65 @@ async def on_message(message):
         init_game_user(message.author.id)
     
     await add_user_talking_exp(message, message.author.id)
-    
+
+    channel_id = 1387270450270310501 #mygo channel
+    if bot.get_channel(channel_id):
+        result = requests.get(f'https://mygoapi.miyago9267.com/mygo/img?keyword={message.content}').json()
+        if result['urls']:
+            # res_texts = [option['alt'] for option in result['urls']]
+            # print(res_texts)
+
+            # embed = discord.Embed(title="Select!", color=0x0000ff)
+            # for (index, res_text) in enumerate(res_texts):
+            #     embed.add_field(name=index, value=res_text, inline=False)
+
+            # ask_message = await message.channel.send(embed=embed)
+
+            # for i in range(len(res_texts)):
+            #     await ask_message.add_reaction(emoji_digits[i])
+
+            # def check(r: discord.Reaction, u: discord.User):
+            #     print(r.__str__(),u)
+            #     return not u.bot and r.message == ask_message and emoji_to_int(r.__str__()) != None
+
+            # (reaction, user) = await bot.wait_for("reaction_add", check=check)
+
+            # assert isinstance(reaction, discord.Reaction)
+            # print(reaction.emoji.__str__())
+
+            # index = emoji_to_int(reaction.__str__())
+
+
+            # print(result)
+            print(len(result['urls']))
+            index = random.randint(len(result['urls']))
+            await message.channel.send(result['urls'][index]['url'])
+
+            # await ask_message.delete()
+        else:
+            class Recipe(BaseModel):
+                recipe_name: str
+                ingredients: list[str]
+            filename = 'output'
+            with open(filename,'r',encoding='utf-16') as f:
+                lines = f.readlines()
+            client = genai.Client(api_key="AIzaSyArrdXxgKRLASzTflPNSNE9RNGJhdGsnXM")
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=f"""以下是 MyGo 的台詞列表：
+                            {lines}
+                            請選出和{message.content}最相關的台詞編號
+                        """,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": list[Recipe],
+                },
+            )
+            await message.channel.send("LLM 正在匹配最相關圖片")
+            # Use the response as a JSON string.
+            print(response.text)
+
+
     if message.content == "?抽籤":
         acg_quotes = [
             "o月是xx的oo",
