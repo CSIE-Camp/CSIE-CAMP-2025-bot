@@ -23,6 +23,12 @@ class StyleTransfer(commands.Cog):
         )
         # 建立一個整合的 style map，方便管理
         self.style_map = {
+            config.STYLE_TRANSFER_SAKIKO_CHANNEL_ID: {
+                "prompt_key": "sakiko",
+                "webhook_url": config.STYLE_TRANSFER_SAKIKO_WEBHOOK_URL,
+                "username": "祥子",
+                "avatar_url": "https://cdn.cybassets.com/media/W1siZiIsIjE2NzgwL3Byb2R1Y3RzLzU0NTkzNTY2LzE3NDI3NDgwMjBfYjI0ODdjZGIxMmQzYzEyMDI2OWMucG5nIl0sWyJwIiwidGh1bWIiLCIyMDQ4eDIwNDgiXV0.png?sha=af6e73a2db61f48c",
+            },
             config.STYLE_TRANSFER_WENYAN_CHANNEL_ID: {
                 "prompt_key": "wenyan",
                 "webhook_url": config.STYLE_TRANSFER_WENYAN_WEBHOOK_URL,
