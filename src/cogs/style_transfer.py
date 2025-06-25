@@ -62,16 +62,10 @@ class StyleTransfer(commands.Cog):
             bucket = self._cd.get_bucket(message)
             retry_after = bucket.update_rate_limit()
             if retry_after:
-                # We can't send a reply in the style transfer channel, so we send a DM
-                try:
-                    await message.author.send(
-                        f"你在 **#{message.channel.name}** 的發言太快了，請在 {retry_after:.2f} 秒後再試一次。"
-                    )
-                except discord.Forbidden:
-                    # If the user has DMs disabled, we can't do much.
-                    pass
-                # We still need to delete the original message to keep the channel clean
-                await message.delete()
+                await message.reply(
+                    f"你的發言太快了，請在 {retry_after:.2f} 秒後再試一次。",
+                    delete_after=5,
+                )
                 return
             await self.handle_style_transfer(message)
 
@@ -87,7 +81,6 @@ class StyleTransfer(commands.Cog):
         webhook_url = style_info.get("webhook_url")
         if not webhook_url:
             print(f"錯誤：頻道 {message.channel.id} 的 Webhook URL 未設定。")
-            # 可以在此發送一個提示訊息，但為避免洗版，暫時只在後台提示
             return
 
         prompt_key = style_info.get("prompt_key")
@@ -95,10 +88,12 @@ class StyleTransfer(commands.Cog):
         if not prompt:
             return
 
+        original_content = message.content
+
         async with aiohttp.ClientSession() as session:
             try:
                 # 產生 LLM 回應
-                final_prompt = f"{prompt}\n\n使用者輸入：\n```{message.content}```"
+                final_prompt = f"{prompt}\n\n使用者輸入：\n```{original_content}```"
                 llm_response = await self.model.generate_content_async(final_prompt)
 
                 # 透過 Webhook 發送訊息
