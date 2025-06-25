@@ -2,19 +2,18 @@
 import discord
 from discord.ext import commands
 import random
-from src.utils.user_data import UserData
+from src.utils.user_data import user_data_manager
 from src import config
 
 
 class Slot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.user_data = UserData(config.USER_DATA_FILE)
 
-    @commands.command(name="拉霸")
+    @commands.command(name="拉霸", aliases=["slot"])
     async def slot(self, ctx, amount: int):
         """拉霸遊戲"""
-        user = self.user_data.get_user(ctx.author.id)
+        user = await user_data_manager.get_user(ctx.author.id)
         current_money = user["money"]
 
         if amount > current_money:
@@ -77,7 +76,7 @@ class Slot(commands.Cog):
             msg = f"沒有相同的...損失 {abs(winnings)} 元...{random.choice(add_msgs)}"
 
         user["money"] += winnings
-        self.user_data.save_data()
+        await user_data_manager.update_user_data(ctx.author.id, user)
         await ctx.send(msg)
 
     @slot.error
