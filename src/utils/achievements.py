@@ -7,6 +7,8 @@
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import discord
+import json
+import os
 from src.utils.user_data import user_data_manager
 
 
@@ -21,37 +23,50 @@ class Achievement:
         self.reward_money = reward_money
 
 
-# 定義所有成就
-ACHIEVEMENTS = {
-    "slot_jackpot": Achievement(
-        id="slot_jackpot",
-        name="拉霸大獎",
-        description="在拉霸遊戲中中了五個相同符號",
-        icon="🎰",
-        reward_money=500
-    ),
-    "slot_master": Achievement(
-        id="slot_master",
-        name="拉霸高手",
-        description="在拉霸遊戲中中了四個相同符號",
-        icon="🎯",
-        reward_money=100
-    ),
-    "lucky_streak": Achievement(
-        id="lucky_streak",
-        name="幸運連擊",
-        description="連續簽到7天",
-        icon="🍀",
-        reward_money=200
-    ),
-    "rich_player": Achievement(
-        id="rich_player",
-        name="小富豪",
-        description="擁有超過10000元",
-        icon="💰",
-        reward_money=1000
-    )
-}
+class Achievement:
+    """成就類別"""
+    
+    def __init__(self, id: str, name: str, description: str, icon: str, reward_money: int = 0):
+        self.id = id
+        self.name = name
+        self.description = description
+        self.icon = icon
+        self.reward_money = reward_money
+
+
+def load_achievements() -> Dict[str, Achievement]:
+    """從 JSON 檔案載入成就資料"""
+    achievements_file = os.path.join("data", "achievement.json")
+    try:
+        with open(achievements_file, "r", encoding="utf-8") as f:
+            achievement_data = json.load(f)
+        
+        achievements = {}
+        for achievement_id, data in achievement_data.items():
+            achievements[achievement_id] = Achievement(
+                id=data["id"],
+                name=data["name"],
+                description=data["description"],
+                icon=data["icon"],
+                reward_money=data.get("reward_money", 0)
+            )
+        
+        print(f"已成功載入 {len(achievements)} 個成就定義")
+        return achievements
+    
+    except FileNotFoundError:
+        print(f"警告：找不到成就檔案 '{achievements_file}'，使用空的成就列表")
+        return {}
+    except json.JSONDecodeError as e:
+        print(f"警告：無法解析成就檔案 '{achievements_file}': {e}")
+        return {}
+    except Exception as e:
+        print(f"載入成就檔案時發生錯誤: {e}")
+        return {}
+
+
+# 載入所有成就
+ACHIEVEMENTS = load_achievements()
 
 
 class AchievementManager:

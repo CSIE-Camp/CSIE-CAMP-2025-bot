@@ -1,0 +1,30 @@
+{
+    "slot_jackpot": {
+        "id": "slot_jackpot",
+        "name": "拉霸大獎",
+        "description": "在拉霸遊戲中中了五個相同符號",
+        "icon": "🎰",
+        "reward_money": 500
+    },
+    "slot_master": {
+        "id": "slot_master",
+        "name": "拉霸高手",
+        "description": "在拉霸遊戲中中了四個相同符號",
+        "icon": "🎯",
+        "reward_money": 100
+    },
+    "lucky_streak": {
+        "id": "lucky_streak",
+        "name": "幸運連擊",
+        "description": "連續簽到7天",
+        "icon": "🍀",
+        "reward_money": 200
+    },
+    "rich_player": {
+        "id": "rich_player",
+        "name": "小富豪",
+        "description": "擁有超過10000元",
+        "icon": "💰",
+        "reward_money": 1000
+    }
+}
