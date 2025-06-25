@@ -10,10 +10,14 @@ import os
 import sys
 import requests
 import json
+import base64
+from io import BytesIO
 
 intents = discord.Intents.all()
 
 bot = commands.Bot(intents=intents, command_prefix="?")
+
+NGROK_URL = os.getenv("NGROK_URL")
 
 msg_ch = None
 
@@ -57,11 +61,6 @@ lesson_name = [
     "黑客松 & 吃午餐", "黑客松報告", "閉幕", "結束"
 ]
 
-lesson_name_to_time = {}
-
-for i in range(len(lesson_name)):
-    lesson_name_to_time[lesson_name[i]] = [lesson_time[i]]
-
 with open(json_name, 'r') as f:
     game_user = json.load(f)
     print(game_user)
@@ -85,6 +84,42 @@ def init_game_user(user_id):
     game_user[user_id]["money"] = 0
     update_data()
 
+async def request_photo(prompt) -> requests.Response:
+    """
+    發送請求到 ngrok 的 API 端點，並獲取生成的圖片
+    回傳是 requests.Response 物件，需要用generate_photo_url() 來處理
+    """
+    return requests.post(
+                f"{NGROK_URL}/",
+                json={"prompt": prompt}
+            )
+
+async def generate_bytesIO(ctx, *, prompt):
+    """
+    ctx: 可以發送訊息的物件。有可能是 channel, webhook, message 等等
+    回傳是圖片的 URL，可以用embed 或者send等等方法發送
+    """
+    # return "https://www.alleycat.org/wp-content/uploads/2019/03/FELV-cat.jpg"
+    try:
+        response = await request_photo(prompt)
+
+        if response.status_code != 200:
+            print("API 請求失敗")
+            return ""
+
+        data = response.json()
+
+        if data['status'] != 'success':
+            print("生成圖片時發生錯誤")
+            return ""
+        
+        #將 base64 轉回圖片
+        image_data = base64.b64decode(data['image'])
+        return BytesIO(image_data)
+                        
+    except Exception as e:
+        raise e # 暫時不處理錯誤
+
 async def add_user_talking_exp(message, user_id):
     user_id = str(user_id)
     _user = game_user[user_id]
@@ -101,7 +136,7 @@ async def user_level_up(message, user_id):
     
 async def check_in(channel):
     assert isinstance(channel, discord.TextChannel)
-    remain_amount = 10
+    remain_amount = 20
     limit_amount = remain_amount
     message = await channel.send("限時獎金")
 
@@ -117,7 +152,12 @@ async def check_in(channel):
             await message.edit(f"獎金時間結束")
             break
 
-        await bot.wait_for("message", check=check, timeout=(limit_time - datetime.datetime.now()).seconds)
+        try: 
+            await bot.wait_for("message", check=check, timeout=(limit_time - datetime.datetime.now()).seconds)
+        except asyncio.TimeoutError:
+            await message.edit(content=f"獎金時間結束")
+            break
+
         remain_amount -= 1
         await msg.edit(content=f"還剩 {remain_amount} 位名額")
 
@@ -131,18 +171,66 @@ async def check_in(channel):
 async def on_ready():
     print(f'已登入為 {bot.user}')
 
+    # 限時搶錢頻道設定 (現在設為測試服中 test) TODO: 改為正式營頻道
+    test_channel = await bot.fetch_channel(1368944465703866448)
+
+    test_random_time = -1
+    # TODO: 移除下面這行
+    test_random_time = random.randint(int(datetime.datetime.now().timestamp()), int((datetime.datetime.now() + datetime.timedelta(seconds=20)).timestamp()))
+
+    # day 1
+    day1_random_time = -1
+    choice = random.randint(0, 1)
+    if choice == 0:
+        day1_random_time = random.randint(int(lesson_time[2].timestamp()), int(lesson_time[3].timestamp()-1))
+    elif choice == 1:
+        day1_random_time = random.randint(int(lesson_time[4].timestamp()), int(lesson_time[5].timestamp()-1))
+
+    # day 2
+    day2_random_time = -1
+    choice = random.randint(0, 1)
+    if choice == 0:
+        day2_random_time = random.randint(int(lesson_time[8].timestamp()), int(lesson_time[9].timestamp()-1))
+    elif choice == 1:
+        day2_random_time = random.randint(int(lesson_time[11].timestamp()), int(lesson_time[12].timestamp()-1))
+
+    # day 3
+    day3_random_time = -1
+    choice = random.randint(0, 1)
+    if choice == 0:
+        day3_random_time = random.randint(int(lesson_time[15].timestamp()), int(lesson_time[16].timestamp()-1))
+    elif choice == 1:
+        day3_random_time = random.randint(int(lesson_time[18].timestamp()), int(lesson_time[19].timestamp()-1))
+
+    # day 4
+    day4_random_time = -1
+    day4_random_time = random.randint(int(lesson_time[20].timestamp()), int(lesson_time[21].timestamp()-1))
+
     while True:
-        inp = await asyncio.to_thread(input, "> ")
-        if inp == "exit":
-            await bot.close()
-            for task in asyncio.all_tasks():
-                task.cancel()
-            break
-        if msg_ch == None:
-            continue
-        ch = bot.get_channel(msg_ch)
-        assert ch != None
-        await ch.send(f"From Terminal: {inp}")
+        if int(datetime.datetime.now().timestamp()) == test_random_time:
+            await check_in(test_channel)
+        if int(datetime.datetime.now().timestamp()) == day1_random_time:
+            await check_in(test_channel)
+        elif int(datetime.datetime.now().timestamp()) == day2_random_time:
+            await check_in(test_channel)
+        elif int(datetime.datetime.now().timestamp()) == day3_random_time:
+            await check_in(test_channel)
+        elif int(datetime.datetime.now().timestamp()) == day4_random_time:
+            await check_in(test_channel)
+
+
+        # inp = await asyncio.to_thread(input, "> ")
+        # if inp == "exit":
+        #     await bot.close()
+        #     for task in asyncio.all_tasks():
+        #         task.cancel()
+        #     break
+        # if msg_ch == None:
+        #     continue
+        # ch = bot.get_channel(msg_ch)
+        # assert ch != None
+        # await ch.send(f"From Terminal: {inp}")
+        
     sys.exit()
 
 @bot.command()
@@ -243,11 +331,9 @@ async def mygo(ctx: commands.Context,*,cal):
 
     await ask_message.delete()
 
-
 # 簽到指令
 @bot.command(name="簽到")
 async def sign_in(ctx):
-    await check_in(ctx.message.channel)
     return
     user_id = ctx.author.id
     if not check_user(user_id):
@@ -827,10 +913,13 @@ async def on_message(message):
             content = "小吉！"
         else:
             content = "迷你吉！"
+
+        buffer = await generate_bytesIO(ctx=message, prompt=quote)
+        file = discord.File(buffer, filename="fortune.png")
         embed = discord.Embed(title=f"{content}", color=0x00ff00)
-        embed.set_image(url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSarEhHkzNHCsqlDN1ROMNxvDFmEpAvGmldXA&s")
+        embed.set_image(url="attachment://fortune.png")
         embed.set_footer(text=f"今日適合你的一句話：{quote}")
-        await message.channel.send(embed=embed)
+        await message.channel.send(embed=embed, file=file)
     
     if message.content.startswith("?查詢課表"):
         custom_time = message.content.split(" ") # mmddhhmm (測試用)
