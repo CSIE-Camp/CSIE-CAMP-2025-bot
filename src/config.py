@@ -28,6 +28,24 @@ EASTER_EGG_CHANNEL_ID = (
     else None
 )
 
+# --- Style Transfer Channel IDs ---
+STYLE_TRANSFER_WENYAN_CHANNEL_ID = (
+    int(os.getenv("STYLE_TRANSFER_WENYAN_CHANNEL_ID"))
+    if os.getenv("STYLE_TRANSFER_WENYAN_CHANNEL_ID") != None
+    else None
+)
+STYLE_TRANSFER_CATGIRL_CHANNEL_ID = (
+    int(os.getenv("STYLE_TRANSFER_CATGIRL_CHANNEL_ID"))
+    if os.getenv("STYLE_TRANSFER_CATGIRL_CHANNEL_ID") != None
+    else None
+)
+STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID = (
+    int(os.getenv("STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID"))
+    if os.getenv("STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID") != None
+    else None
+)
+
+
 # --- DEBUG FLAG (CURRENTLY NO IMPLELEMTATION, CAN BE IGNORED) ---
 DEBUG = True if os.getenv("DEBUG") == "True" else None
 DEVELOPER_ID = (
