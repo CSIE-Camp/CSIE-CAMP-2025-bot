@@ -85,7 +85,7 @@ class General(commands.Cog):
                 inline=False,
             )
 
-            embed.set_footer(text=f"由 {self.bot.user.name} 提供 | 使用 ?p 查詢")
+            embed.set_footer(text=f"由 {self.bot.user.name} 提供 | 使用 ?profile 查詢")
 
         await ctx.send(embed=embed)
 
