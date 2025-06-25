@@ -5,9 +5,7 @@
 例如設定頻道、重載 cogs 等。
 """
 
-import discord
 from discord.ext import commands
-from src import config
 import json
 from src.utils.user_data import user_data_manager
 
