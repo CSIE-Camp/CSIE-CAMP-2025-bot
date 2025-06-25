@@ -14,9 +14,22 @@ COGS_DIR = "src/cogs"
 USER_DATA_FILE = os.getenv("USER_DATA_FILE", "user_data.json")
 
 # --- Channel IDs ---
-MYGO_CHANNEL_ID = int(os.getenv("MYGO_CHANNEL_ID")) if os.getenv("MYGO_CHANNEL_ID") != None else None
-REWARD_CHANNEL_ID = int(os.getenv("REWARD_CHANNEL_ID")) if os.getenv("REWARD_CHANNEL_ID") != None else None
+MYGO_CHANNEL_ID = (
+    int(os.getenv("MYGO_CHANNEL_ID")) if os.getenv("MYGO_CHANNEL_ID") != None else None
+)
+REWARD_CHANNEL_ID = (
+    int(os.getenv("REWARD_CHANNEL_ID"))
+    if os.getenv("REWARD_CHANNEL_ID") != None
+    else None
+)
+EASTER_EGG_CHANNEL_ID = (
+    int(os.getenv("EASTER_EGG_CHANNEL_ID"))
+    if os.getenv("EASTER_EGG_CHANNEL_ID") != None
+    else None
+)
 
 # --- DEBUG FLAG (CURRENTLY NO IMPLELEMTATION, CAN BE IGNORED) ---
 DEBUG = True if os.getenv("DEBUG") == "True" else None
-DEVELOPER_ID = int(os.getenv("DEVELOPER_ID")) if os.getenv("DEVELOPER_ID") != None else None
+DEVELOPER_ID = (
+    int(os.getenv("DEVELOPER_ID")) if os.getenv("DEVELOPER_ID") != None else None
+)

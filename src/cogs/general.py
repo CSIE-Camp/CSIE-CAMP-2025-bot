@@ -40,7 +40,7 @@ class General(commands.Cog):
             print(f"錯誤：無法解析名言檔案 '{self.acg_quotes_path}'")
             return []
 
-    @commands.command(name="profile", aliases=["p", "資料"])
+    @commands.command(name="profile", aliases=["資料"])
     async def profile(
         self, ctx: commands.Context, member: Optional[discord.Member] = None
     ):
@@ -112,7 +112,7 @@ class General(commands.Cog):
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await ctx.send(embed=embed)
 
-    @commands.command(name="抽籤")
+    @commands.command(name="draw", attrs=["抽籤"])
     async def draw_quote(self, ctx: commands.Context):
         """抽籤決定今日運勢，並附上一句動漫名言。"""
         if not self.acg_quotes:

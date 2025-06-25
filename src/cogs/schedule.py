@@ -84,7 +84,11 @@ class Schedule(commands.Cog):
             return random.choice(additional_messages)
         return None
 
-    @commands.command(name="查詢課表")
+    @commands.command(
+        name="schedule",
+        aliases=["查詢課表"],
+        help="查詢目前課程、剩餘時間、下個課程。可選填 mmddHHMM 格式的自訂時間。",
+    )
     async def query_schedule(self, ctx, custom_time: str = None):
         """查詢目前課程、剩餘時間、下個課程。可選填 mmddHHMM 格式的自訂時間。"""
         now = datetime.datetime.now()
