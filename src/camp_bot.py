@@ -26,7 +26,7 @@ intents.message_content = True  # 監聽訊息內容所需 (例如 on_message �
 intents.members = True  # 獲取伺服器成員列表所需 (例如用於經驗值系統)
 
 # 建立 Bot 實例
-bot = commands.Bot(command_prefix="/", intents=intents)
+bot = commands.Bot(command_prefix="?", intents=intents, help_command=None)
 
 
 @bot.event
