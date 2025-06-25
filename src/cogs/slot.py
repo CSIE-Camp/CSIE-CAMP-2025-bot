@@ -1,6 +1,7 @@
 from discord.ext import commands
 import random
 from src.utils.user_data import user_data_manager
+from src.utils.achievements import achievement_manager
 
 
 class Slot(commands.Cog):
@@ -75,6 +76,12 @@ class Slot(commands.Cog):
         user["money"] += winnings
         await user_data_manager.update_user_data(ctx.author.id, user)
         await ctx.send(msg)
+        
+        # 檢查拉霸成就
+        await achievement_manager.check_slot_achievements(ctx.author.id, max_count, ctx)
+        
+        # 檢查金錢成就
+        await achievement_manager.check_money_achievements(ctx.author.id, user["money"], ctx)
 
     @slot.error
     async def slot_error(self, ctx, error):

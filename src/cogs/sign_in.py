@@ -9,6 +9,7 @@ import random
 
 # 導入共享的 user_data_manager 實例，確保資料操作的同步與一致性
 from src.utils.user_data import user_data_manager
+from src.utils.achievements import achievement_manager
 
 
 class SignIn(commands.Cog):
@@ -58,6 +59,14 @@ class SignIn(commands.Cog):
 
         # 使用異步方法將更新後的資料寫回檔案
         await user_data_manager.update_user_data(user_id, user)
+
+        # --- 檢查成就 ---
+        # 檢查連續簽到成就
+        if new_streak >= 7:
+            await achievement_manager.check_and_award_achievement(user_id, "lucky_streak", ctx)
+        
+        # 檢查金錢成就
+        await achievement_manager.check_money_achievements(user_id, user["money"], ctx)
 
         # --- 發送美化後的回應訊息 ---
         embed = discord.Embed(
