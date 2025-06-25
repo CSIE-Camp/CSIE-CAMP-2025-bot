@@ -17,6 +17,10 @@ class StyleTransfer(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.model = llm_model
+        # Cooldown: 1 message per 10 seconds per user
+        self._cd = commands.CooldownMapping.from_cooldown(
+            1, 10.0, commands.BucketType.user
+        )
         # 建立一個整合的 style map，方便管理
         self.style_map = {
             config.STYLE_TRANSFER_WENYAN_CHANNEL_ID: {
@@ -54,6 +58,21 @@ class StyleTransfer(commands.Cog):
             return
 
         if message.channel.id in self.style_map:
+            # Check for cooldown
+            bucket = self._cd.get_bucket(message)
+            retry_after = bucket.update_rate_limit()
+            if retry_after:
+                # We can't send a reply in the style transfer channel, so we send a DM
+                try:
+                    await message.author.send(
+                        f"你在 **#{message.channel.name}** 的發言太快了，請在 {retry_after:.2f} 秒後再試一次。"
+                    )
+                except discord.Forbidden:
+                    # If the user has DMs disabled, we can't do much.
+                    pass
+                # We still need to delete the original message to keep the channel clean
+                await message.delete()
+                return
             await self.handle_style_transfer(message)
 
     async def handle_style_transfer(self, message: discord.Message):

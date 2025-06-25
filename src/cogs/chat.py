@@ -15,6 +15,10 @@ class Chat(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.model = llm_model
+        # Cooldown: 1 message per 30 seconds per user
+        self._cd = commands.CooldownMapping.from_cooldown(
+            1, 30.0, commands.BucketType.user
+        )
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -23,6 +27,21 @@ class Chat(commands.Cog):
             return
 
         if self.model and self.bot.user in message.mentions:
+            # Check for cooldown
+            bucket = self._cd.get_bucket(message)
+            retry_after = bucket.update_rate_limit()
+            if retry_after:
+                try:
+                    await message.author.send(
+                        f"你在 **#{message.channel.name}** 中對我的提問太快了，讓我先喘口氣！請在 {retry_after:.2f} 秒後再試一次。"
+                    )
+                except discord.Forbidden:
+                    # Fallback if DMs are disabled
+                    await message.reply(
+                        f"你問得太快了，讓我先喘口氣！請在 {retry_after:.2f} 秒後再試一次。",
+                        delete_after=10,
+                    )
+                return
             await self.handle_llm_response(message)
 
     async def handle_llm_response(self, message: discord.Message):

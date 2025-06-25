@@ -17,6 +17,10 @@ class MyGo(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.model = llm_model
+        # Cooldown: 1 message per 30 seconds per user for LLM part
+        self._cd = commands.CooldownMapping.from_cooldown(
+            1, 10.0, commands.BucketType.user
+        )
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -44,6 +48,21 @@ class MyGo(commands.Cog):
                         image_url = random.choice(result["urls"])["url"]
                         await message.channel.send(image_url)
                     elif self.model:
+                        # Check for cooldown before calling LLM
+                        bucket = self._cd.get_bucket(message)
+                        retry_after = bucket.update_rate_limit()
+                        if retry_after:
+                            try:
+                                await message.author.send(
+                                    f"你在 **#{message.channel.name}** 的發言太快了，AI 需要時間思考！請在 {retry_after:.2f} 秒後再試一次。"
+                                )
+                            except discord.Forbidden:
+                                await message.reply(
+                                    f"你問得太快了，讓我先喘口氣！請在 {retry_after:.2f} 秒後再試一次。",
+                                    delete_after=10,
+                                )
+                            return
+
                         async with message.channel.typing():
                             await message.channel.send("找不到相關圖片，讓我想想... 🤔")
                             prompt = f"「{keyword}」這句話聽起來像是 MyGO!!!!! 裡的哪個角色會說的台詞？請你扮演那個角色，並用該角色的口吻，生成一句全新的、風格相似的台詞。"
