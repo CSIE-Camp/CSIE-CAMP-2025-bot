@@ -62,16 +62,10 @@ class StyleTransfer(commands.Cog):
             bucket = self._cd.get_bucket(message)
             retry_after = bucket.update_rate_limit()
             if retry_after:
-                # We can't send a reply in the style transfer channel, so we send a DM
-                try:
-                    await message.author.send(
-                        f"你在 **#{message.channel.name}** 的發言太快了，請在 {retry_after:.2f} 秒後再試一次。"
-                    )
-                except discord.Forbidden:
-                    # If the user has DMs disabled, we can't do much.
-                    pass
-                # We still need to delete the original message to keep the channel clean
-                await message.delete()
+                await message.reply(
+                    f"你的發言太快了，請在 {retry_after:.2f} 秒後再試一次。",
+                    delete_after=5,
+                )
                 return
             await self.handle_style_transfer(message)
 
@@ -94,16 +88,7 @@ class StyleTransfer(commands.Cog):
         if not prompt:
             return
 
-        # Store content and delete original message
         original_content = message.content
-        try:
-            await message.delete()
-        except discord.Forbidden:
-            print(
-                f"警告：缺少在頻道 {message.channel.id} 中「管理訊息」的權限，無法刪除原始訊息。"
-            )
-        except discord.NotFound:
-            pass  # Message already deleted
 
         async with aiohttp.ClientSession() as session:
             try:

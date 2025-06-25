@@ -65,15 +65,10 @@ class MyGo(commands.Cog):
                 bucket = self._cd.get_bucket(message)
                 retry_after = bucket.update_rate_limit()
                 if retry_after:
-                    try:
-                        await message.author.send(
-                            f"你在 **#{message.channel.name}** 的發言太快了，AI 需要時間思考！請在 {retry_after:.2f} 秒後再試一次。"
-                        )
-                    except discord.Forbidden:
-                        await message.reply(
-                            f"你問得太快了，讓我先喘口氣！請在 {retry_after:.2f} 秒後再試一次。",
-                            delete_after=10,
-                        )
+                    await message.reply(
+                        f"你問得太快了，AI 需要時間思考！請在 {retry_after:.2f} 秒後再試一次。",
+                        delete_after=5,
+                    )
                     return
 
                 async with message.channel.typing():
