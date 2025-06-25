@@ -75,11 +75,20 @@ class UserData:
         user_id_str = str(user_id)
 
         if user_id_str in self.users:
-            return self.users[user_id_str]
+            user_data = self.users[user_id_str]
+            # 確保舊用戶也有成就欄位（向後相容性）
+            if "achievements" not in user_data:
+                user_data["achievements"] = []
+                await self.update_user_data(user_id, user_data)
+            return user_data
 
         async with self._lock:
             if user_id_str in self.users:
-                return self.users[user_id_str]
+                user_data = self.users[user_id_str]
+                if "achievements" not in user_data:
+                    user_data["achievements"] = []
+                    await self._save_data()
+                return user_data
 
             print(f"新使用者: {user_id_str}，正在建立預設資料...")
             default_data = {
@@ -88,6 +97,7 @@ class UserData:
                 "money": 100,
                 "last_sign_in": None,
                 "sign_in_streak": 0,
+                "achievements": []
             }
             self.users[user_id_str] = default_data
             await self._save_data()

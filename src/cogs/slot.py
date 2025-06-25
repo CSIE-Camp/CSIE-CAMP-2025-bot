@@ -3,6 +3,7 @@ from discord.ext import commands
 import random
 import asyncio
 from src.utils.user_data import user_data_manager
+from src.utils.achievements import achievement_manager
 
 # --- Game Configuration ---
 
@@ -18,7 +19,6 @@ EMOJI_LIST = [
 
 
 # --- Helper Functions ---
-
 
 class Slot(commands.Cog):
     def __init__(self, bot):
@@ -60,30 +60,45 @@ class Slot(commands.Cog):
         # --- 計算與結果 ---
         counts = {symbol: final_result.count(symbol) for symbol in final_result}
         max_count = max(counts.values()) if counts else 0
+        author_mention = ctx.author.mention
+        author_name = ctx.author.display_name
 
         winnings = 0
         result_text = ""
 
         if max_count == 5:
-            winnings = amount * 9  # 贏得賭注的9倍 (總共拿回10倍)
-            result_text = "JACKPOT！五個一樣！太神啦！"
+            winnings = 100 * amount
+            add_msgs = [
+                "原...原來，你的幸運值已經突破系統上限了>.<",
+                "是百年難得一見的拉霸奇才！",
+                "你該不會駭入系統了吧！？",
+            ]
+            result_text = f"{author_mention} 恭喜你中了五個！！！賺了 {winnings} 元！{random.choice(add_msgs)}"
         elif max_count == 4:
-            winnings = amount * 2  # 贏得賭注的2倍 (總共拿回3倍)
-            result_text = "中了四個！運氣真好！"
+            winnings = 10 * amount
+            add_msgs = [
+                "搞不好能遇到好事喔~",
+                "下一代拉霸幫幫主就是你:O",
+                "去找別人單挑猜拳吧",
+            ]
+            result_text = f"{author_mention} 中了四個！！賺了 {winnings} 元！{random.choice(add_msgs)}"
         elif max_count == 3:
-            winnings = 0  # 回本
-            result_text = "中了三個！回本了，不賺不賠。"
+            winnings = amount
+            result_text = f"{author_name} 中了三個！賺了 {winnings} 元！運氣還不錯～"
         elif max_count == 2:
-            winnings = -int(amount * 0.5)  # 輸掉一半賭注
-            result_text = "只中了兩個，輸了一半..."
-        else:  # max_count is 1 (all different)
-            winnings = -amount  # 輸掉全部賭注
-            result_text = "可惜，沒有中獎...再接再厲！"
+            winnings = -(amount // 2)
+            result_text = f"有兩個一樣，但還是損失了 {abs(winnings)} 元..."
+        else:
+            winnings = -amount
+            add_msgs = [
+                "只能說...菜就多練=v=",
+                "也算變相的運氣好...啦T-T",
+                "恭喜你把壞運用光了q-q",
+            ]
+            result_text = f"沒有相同的...損失 {abs(winnings)} 元...{random.choice(add_msgs)}"
 
-        # 更新使用者資料
         user["money"] += winnings
         await user_data_manager.update_user_data(ctx.author.id, user)
-
         # 建立 Embed 結果
         if winnings > 0:
             color = discord.Color.green()
