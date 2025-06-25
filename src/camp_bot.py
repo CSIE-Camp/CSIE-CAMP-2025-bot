@@ -15,6 +15,7 @@ from discord.ext import commands
 # Python 會自動將專案根目錄加入 sys.path，
 # 因此我們可以直接從 src 開始 import，無需手動修改 sys.path。
 from src import config
+from src.utils.user_data import user_data_manager
 
 # --- Bot 初始化 ---
 
@@ -77,6 +78,7 @@ async def main():
 
     # 使用 async with 來管理 bot 的生命週期，確保連線被妥善關閉
     async with bot:
+        await user_data_manager.load_data()  # <-- 在載入 Cogs 前，先載入使用者資料
         await load_cogs()
         print("機器人即將啟動...")
         await bot.start(config.DISCORD_TOKEN)
