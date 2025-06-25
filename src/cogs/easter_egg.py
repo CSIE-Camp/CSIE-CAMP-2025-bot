@@ -16,10 +16,6 @@ class EasterEgg(commands.Cog):
         with open("data/flags.json", "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def save_flags_data(self):
-        with open("data/flags.json", "w", encoding="utf-8") as f:
-            json.dump(self.flags_data, f, indent=4)
-
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -42,11 +38,14 @@ class EasterEgg(commands.Cog):
                 )
                 return  # User has already found this flag
 
-            if len(flag_info.get("found_by", [])) < 3:
-                await message.delete()
+            # 從所有使用者資料中計算這個彩蛋被找到的次數
+            all_users = self.user_data.users.values()
+            found_count = sum(
+                1 for u in all_users if flag_id in u.get("found_flags", [])
+            )
 
-                flag_info.setdefault("found_by", []).append(str(user_id))
-                self.save_flags_data()
+            if found_count < 3:
+                await message.delete()
 
                 user.setdefault("found_flags", []).append(flag_id)
                 await self.user_data.update_user_data(user_id, user)
@@ -55,7 +54,8 @@ class EasterEgg(commands.Cog):
                     config.EASTER_EGG_CHANNEL_ID
                 )
                 if announcement_channel:
-                    found_order = len(flag_info.get("found_by", []))
+                    # 將當前找到的人數 +1 作為名次
+                    found_order = found_count + 1
                     order_text = {1: "第一位", 2: "第二位", 3: "第三位"}.get(
                         found_order, f"第 {found_order} 位"
                     )

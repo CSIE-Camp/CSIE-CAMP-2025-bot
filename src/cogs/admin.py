@@ -24,10 +24,6 @@ class Admin(commands.Cog):
         with open("data/flags.json", "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def save_flags_data(self):
-        with open("data/flags.json", "w", encoding="utf-8") as f:
-            json.dump(self.flags_data, f, indent=4)
-
     @commands.command(name="reload", aliases=["重載"])
     @commands.is_owner()
     async def reload_cog(self, ctx: commands.Context, cog_name: str):
@@ -50,10 +46,6 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def reset_flags(self, ctx):
         """重置所有彩蛋的狀態。"""
-        for flag in self.flags_data.values():
-            flag["found_by"] = []
-        self.save_flags_data()
-
         all_users = self.user_data.users
         for user_id, user_data in all_users.items():
             if "found_flags" in user_data:
