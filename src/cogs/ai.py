@@ -7,26 +7,14 @@ AI 相關功能 Cog。
 - 當機器人被提及時，使用 Gemini LLM 進行對話。
 """
 
-import discord
-from discord.ext import commands
 import aiohttp
 import random
+
+import discord
+from discord.ext import commands
+from google import genai
+
 from src import config
-
-# 嘗試 import google.generativeai，如果失敗則無法使用 LLM 功能
-try:
-    import google.generativeai as genai
-
-    GENAI_AVAILABLE = True
-except ImportError:
-    GENAI_AVAILABLE = False
-
-# --- Gemini AI 初始化 ---
-# 只有在套件存在且提供了 API Key 的情況下才進行設定
-if GENAI_AVAILABLE and config.GEMINI_API_KEY:
-    genai.configure(api_key=config.GEMINI_API_KEY)
-else:
-    GENAI_AVAILABLE = False  # 如果沒有 key，也視為不可用
 
 
 class AI(commands.Cog):
@@ -34,11 +22,12 @@ class AI(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.model = "gemini-2.5-flash"
         # 同樣，只有在可用時才初始化模型
-        if GENAI_AVAILABLE:
-            self.model = genai.GenerativeModel("gemini-pro")
+        if config.GEMINI_API_KEY:
+            self.client = genai.Client(api_key=config.GEMINI_API_KEY)
         else:
-            self.model = None
+            self.client = None
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -46,16 +35,13 @@ class AI(commands.Cog):
         if message.author.bot:
             return
 
-        # --- MyGo 圖片搜尋功能 ---
+        if self.client and self.bot.user in message.mentions:
+            await self.handle_llm_response(message)
+            return
+
+        # 若非提及，且在 MyGo 頻道，則觸發圖片搜尋
         if message.channel.id == config.MYGO_CHANNEL_ID:
             await self.handle_mygo_search(message)
-
-        # --- LLM 回應功能 (被 @ 時觸發) ---
-        if self.model and self.bot.user in message.mentions:
-            # 避免在 MyGo 頻道對同一則訊息重複回應
-            if message.channel.id == config.MYGO_CHANNEL_ID:
-                return
-            await self.handle_llm_response(message)
 
     async def handle_mygo_search(self, message: discord.Message):
         """處理 MyGo 圖片搜尋請求。"""
@@ -73,13 +59,13 @@ class AI(commands.Cog):
                     if result.get("urls"):
                         image_url = random.choice(result["urls"])["url"]
                         await message.channel.send(image_url)
-                    elif self.model:
+                    elif self.client:
                         # 如果找不到圖片，使用 LLM 生成一句相關台詞
                         async with message.channel.typing():
                             await message.channel.send("找不到相關圖片，讓我想想... 🤔")
                             prompt = f"「{keyword}」這句話聽起來像是 MyGO!!!!! 裡的哪個角色會說的台詞？請你扮演那個角色，並用該角色的口吻，生成一句全新的、風格相似的台詞。"
-                            llm_response = await self.model.generate_content_async(
-                                prompt
+                            llm_response = await self.client.models.generate_content(
+                                model=self.model, contents=prompt
                             )
                             await message.channel.send(llm_response.text)
             except aiohttp.ClientError as e:
@@ -89,15 +75,26 @@ class AI(commands.Cog):
 
     async def handle_llm_response(self, message: discord.Message):
         """處理 LLM 的回應請求。"""
-        # 移除 mention，取得純文字內容
-        prompt = message.content.replace(f"<@!{self.bot.user.id}>", "").strip()
+        # 移除所有對機器人的 mention，取得純文字內容
+        # discord.py 的 `user.mention` 會生成 <@ID> 格式
+        # 但使用者有伺服器暱稱時，收到的 content 會是 <@!ID> 格式
+        # 因此兩種都需要移除
+        prompt = (
+            message.content.replace(f"<@{self.bot.user.id}>", "")
+            .replace(f"<@!{self.bot.user.id}>", "")
+            .strip()
+        )
+        print(f"收到 LLM 請求: {prompt}")
         if not prompt:
             await message.channel.send("找我有什麼事嗎？")
             return
 
         async with message.channel.typing():
             try:
-                response = await self.model.generate_content_async(prompt)
+                response = self.client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt,
+                )
                 # Discord 訊息長度限制為 2000 字元
                 if len(response.text) > 2000:
                     await message.channel.send(response.text[:1990] + "...")
@@ -110,10 +107,4 @@ class AI(commands.Cog):
 
 async def setup(bot: commands.Bot):
     """設置函數，用於將此 Cog 加入到 bot 中。"""
-    if not GENAI_AVAILABLE:
-        print(
-            "警告：`google-generativeai` 套件未安裝或 GEMINI_API_KEY 未設定，AI Cog 的 LLM 功能將被停用。"
-        )
-    if not config.MYGO_CHANNEL_ID or config.MYGO_CHANNEL_ID == 0:
-        print("警告：MYGO_CHANNEL_ID 未設定，MyGo 圖片搜尋功能將無法在特定頻道作用。")
     await bot.add_cog(AI(bot))
