@@ -16,6 +16,8 @@ from typing import Optional
 from src.utils.image_gen import generate_bytesIO
 from src.utils.user_data import user_data_manager
 
+from src.utils.mygo import get_mygo_imgs
+
 
 class General(commands.Cog):
     """通用指令的集合。"""
@@ -86,6 +88,14 @@ class General(commands.Cog):
             embed.set_footer(text=f"由 {self.bot.user.name} 提供 | 使用 ?p 查詢")
 
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def test_mg(self, ctx: commands.Context, keyword: str):
+        """tt"""
+        res = await get_mygo_imgs(keyword)
+        print(res)
+
+        await ctx.send(f"```json\n{res.__str__()}\n```")
 
     @commands.command()
     async def links(self, ctx: commands.Context):
