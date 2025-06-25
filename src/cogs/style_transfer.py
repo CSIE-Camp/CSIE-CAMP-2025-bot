@@ -87,7 +87,6 @@ class StyleTransfer(commands.Cog):
         webhook_url = style_info.get("webhook_url")
         if not webhook_url:
             print(f"錯誤：頻道 {message.channel.id} 的 Webhook URL 未設定。")
-            # 可以在此發送一個提示訊息，但為避免洗版，暫時只在後台提示
             return
 
         prompt_key = style_info.get("prompt_key")
@@ -95,10 +94,21 @@ class StyleTransfer(commands.Cog):
         if not prompt:
             return
 
+        # Store content and delete original message
+        original_content = message.content
+        try:
+            await message.delete()
+        except discord.Forbidden:
+            print(
+                f"警告：缺少在頻道 {message.channel.id} 中「管理訊息」的權限，無法刪除原始訊息。"
+            )
+        except discord.NotFound:
+            pass  # Message already deleted
+
         async with aiohttp.ClientSession() as session:
             try:
                 # 產生 LLM 回應
-                final_prompt = f"{prompt}\n\n使用者輸入：\n```{message.content}```"
+                final_prompt = f"{prompt}\n\n使用者輸入：\n```{original_content}```"
                 llm_response = await self.model.generate_content_async(final_prompt)
 
                 # 透過 Webhook 發送訊息
