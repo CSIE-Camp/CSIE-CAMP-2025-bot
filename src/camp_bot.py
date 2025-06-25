@@ -26,7 +26,7 @@ intents.message_content = True  # 監聽訊息內容所需 (例如 on_message �
 intents.members = True  # 獲取伺服器成員列表所需 (例如用於經驗值系統)
 
 # 建立 Bot 實例
-bot = commands.Bot(command_prefix="?", intents=intents)
+bot = commands.Bot(command_prefix="?", intents=intents, help_command=None)
 
 
 @bot.event
@@ -35,7 +35,7 @@ async def on_ready():
     print(f"已成功登入為: {bot.user}")
     print(f"機器人 ID: {bot.user.id}")
     # 設定機器人狀態
-    activity = discord.Game(name="?help | 努力學習中")
+    activity = discord.Game(name="參加師大資工營中！")
     await bot.change_presence(status=discord.Status.online, activity=activity)
     print("機器人狀態已設定完成")
     print("=" * 20)

@@ -4,10 +4,11 @@ Mygo
 """
 
 import aiohttp
-import random
-from src import config
+# import random
+# from src import config
+from typing import List, Dict
 
-async def get_mygo_imgs(keyword: str):
+async def get_mygo_imgs(keyword: str) -> List[Dict] | None:
     async with aiohttp.ClientSession() as session:
         try:
             api_url = f"https://mygoapi.miyago9267.com/mygo/img?keyword={keyword}"
@@ -17,8 +18,17 @@ async def get_mygo_imgs(keyword: str):
 
                 if not result.get("urls"):
                     return None
+                structured_result = []
+                for data in result["urls"]:
+                    url = data["url"]
+                    alt = data["alt"]
+                    assert isinstance(url, str)
+                    assert isinstance(alt, str)
+                    d = {"url": url, "alt": alt}
+                    structured_result.append(d)
+
                 print(result)
-                return result
+                return structured_result
                 # image_url = random.choice(result["urls"])["url"]
                 
         except aiohttp.ClientError as e:

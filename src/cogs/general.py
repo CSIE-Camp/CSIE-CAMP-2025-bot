@@ -40,7 +40,7 @@ class General(commands.Cog):
             print(f"錯誤：無法解析名言檔案 '{self.acg_quotes_path}'")
             return []
 
-    @commands.command(name="profile", aliases=["p", "資料"])
+    @commands.command(name="profile", aliases=["資料"])
     async def profile(
         self, ctx: commands.Context, member: Optional[discord.Member] = None
     ):
@@ -85,7 +85,7 @@ class General(commands.Cog):
                 inline=False,
             )
 
-            embed.set_footer(text=f"由 {self.bot.user.name} 提供 | 使用 ?p 查詢")
+            embed.set_footer(text=f"由 {self.bot.user.name} 提供 | 使用 ?profile 查詢")
 
         await ctx.send(embed=embed)
 
@@ -93,8 +93,7 @@ class General(commands.Cog):
     async def test_mg(self, ctx: commands.Context, keyword: str):
         """tt"""
         res = await get_mygo_imgs(keyword)
-        print(res)
-
+        print(res.__str__())
         await ctx.send(f"```json\n{res.__str__()}\n```")
 
     @commands.command()
@@ -112,7 +111,7 @@ class General(commands.Cog):
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await ctx.send(embed=embed)
 
-    @commands.command(name="抽籤")
+    @commands.command(name="draw", attrs=["抽籤"])
     async def draw_quote(self, ctx: commands.Context):
         """抽籤決定今日運勢，並附上一句動漫名言。"""
         if not self.acg_quotes:
@@ -165,6 +164,72 @@ class General(commands.Cog):
             else:
                 # 如果圖片生成失敗，則發送純文字版本
                 await ctx.send(f"**{content}**\n今日適合你的一句話：{quote}")
+
+    @commands.command(name="help", aliases=["幫助", "說明"])
+    async def help_command(self, ctx: commands.Context):
+        """顯示所有指令的說明。"""
+        embed = discord.Embed(
+            title="🤖 NTNU CSIE Camp 2025 機器人指令說明",
+            description="這是有關本機器人所有功能的詳細說明！",
+            color=discord.Color.purple(),
+        )
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+
+        embed.add_field(
+            name="📖 一般指令",
+            value="""
+- **`?profile` / `?資料`**: 查詢自己或他人的個人資料。
+- **`?links`**: 顯示營隊相關的實用連結。
+- **`?draw` / `?抽籤`**: 每日抽籤，獲得運勢與動漫語錄。
+- **`?schedule` / `?查詢課表`**: 查詢營隊課程表。
+            """,
+            inline=False,
+        )
+
+        embed.add_field(
+            name="💰 遊戲與經濟系統",
+            value="""
+- **`?sign_in` / `?簽到`**: 每日簽到領取金錢。
+- **`?slot <金額>` / `?拉霸 <金額>`**: 玩拉霸機試試手氣。
+- **聊天升級**: 在伺服器中聊天即可獲得經驗值。
+- **定時金錢活動**: 特定時間會出現特殊活動，把握機會賺錢！
+            """,
+            inline=False,
+        )
+
+        embed.add_field(
+            name="🥚 彩蛋系統",
+            value="""
+- **`?egg` / `?彩蛋`**: 查看你已經收集到的彩蛋。
+- **觸發彩蛋**: 在伺服器中輸入隱藏的關鍵字來尋找彩蛋！
+            """,
+            inline=False,
+        )
+
+        embed.add_field(
+            name="🧠 AI 智慧功能",
+            value="""
+- **AI 聊天**: 在任何頻道 `@機器人` 即可與 AI 自由對話。
+- **MyGo 專屬頻道**: 輸入關鍵字，自動搜尋 MyGo 角色圖片或生成 AI 台詞。
+- **風格轉換頻道**: 在特定頻道發言，訊息會被轉換成文言文、貓娘、中二或傲嬌風格。
+            """,
+            inline=False,
+        )
+
+        embed.add_field(
+            name="🛠️ 管理員指令",
+            value="""
+- **`?reload <cog>`**: 重新載入功能模組 (僅限 Bot 擁有者)。
+- **`?reset_flags`**: 重設所有人的彩蛋狀態 (僅限管理員)。
+            """,
+            inline=False,
+        )
+
+        embed.set_footer(
+            text=f"由 {self.bot.user.name} 提供 | <> 中的是必要參數，[] 中的是選用參數。"
+        )
+
+        await ctx.send(embed=embed)
 
 
 async def setup(bot: commands.Bot):
