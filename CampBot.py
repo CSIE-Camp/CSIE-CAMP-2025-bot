@@ -19,6 +19,49 @@ msg_ch = None
 
 json_name = 'user_data.json'
 
+lesson_time = [
+    datetime.datetime(2025, 7, 1, 9, 30), # 2025-07-01 09:30 報到
+    datetime.datetime(2025, 7, 1, 10, 30), # 2025-07-01 10:30 開幕
+    datetime.datetime(2025, 7, 1, 12, 0), # 2025-07-01 12:00 LUNCH TIME
+    datetime.datetime(2025, 7, 1, 13, 30), # 2025-07-01 13:30 課程一
+    datetime.datetime(2025, 7, 1, 17, 40), # 2025-07-01 17:40 DINNER TIME
+    datetime.datetime(2025, 7, 1, 19, 0), # 2025-07-01 19:00 晚上活動
+    datetime.datetime(2025, 7, 1, 21, 0), # 2025-07-01 21:00 CODING/SLEEPING TIME
+
+    datetime.datetime(2025, 7, 2, 9, 40), # 2025-07-02 09:40 課程二
+    datetime.datetime(2025, 7, 2, 12, 0), # 2025-07-02 12:00 LUNCH TIME
+    datetime.datetime(2025, 7, 2, 13, 30), # 2025-07-02 13:30 選修課一
+    datetime.datetime(2025, 7, 2, 15, 10), # 2025-07-02 15:10 課程三
+    datetime.datetime(2025, 7, 2, 17, 50), # 2025-07-02 17:50 DINNER TIME
+    datetime.datetime(2025, 7, 2, 19, 0), # 2025-07-02 19:00 晚上活動
+    datetime.datetime(2025, 7, 2, 21, 0), # 2025-07-02 21:00 CODING/SLEEPING TIME
+
+    datetime.datetime(2025, 7, 3, 9, 40), # 2025-07-03 09:40 課程四
+    datetime.datetime(2025, 7, 3, 12, 0), # 2025-07-03 12:00 LUNCH TIME
+    datetime.datetime(2025, 7, 3, 13, 30), # 2025-07-03 13:30 選修課二
+    datetime.datetime(2025, 7, 3, 15, 10), # 2025-07-03 15:10 黑客松
+    datetime.datetime(2025, 7, 3, 17, 30), # 2025-07-03 17:30 DINNER TIME
+    datetime.datetime(2025, 7, 3, 19, 0), # 2025-07-03 19:00 晚上活動
+    datetime.datetime(2025, 7, 3, 21, 0), # 2025-07-03 21:00 CODING/SLEEPING TIME
+
+    datetime.datetime(2025, 7, 4, 9, 40), # 2025-07-04 09:40 黑客松 & 吃午餐
+    datetime.datetime(2025, 7, 4, 13, 20), # 2025-07-04 13:20 黑客松報告
+    datetime.datetime(2025, 7, 4, 15, 20), # 2025-07-04 15:20 閉幕
+    datetime.datetime(2025, 7, 4, 17, 0) # 2025-07-04 17:00 結束
+]
+
+lesson_name = [
+    "報到", "開幕", "午餐時間", "課程一", "晚餐時間", "晚上活動", "Coding/Sleeping Time",
+    "課程二", "午餐時間", "選修課一", "課程三", "晚餐時間", "晚上活動", "Coding/Sleeping Time",
+    "課程四", "午餐時間", "選修課二", "黑客松", "晚餐時間", "晚上活動", "Coding/Sleeping Time",
+    "黑客松 & 吃午餐", "黑客松報告", "閉幕", "結束"
+]
+
+lesson_name_to_time = {}
+
+for i in range(len(lesson_name)):
+    lesson_name_to_time[lesson_name[i]] = [lesson_time[i]]
+
 with open(json_name, 'r') as f:
     game_user = json.load(f)
     print(game_user)
@@ -56,6 +99,33 @@ async def user_level_up(message, user_id):
         _user["exp"] = 0
         await message.channel.send(f"恭喜 {message.author.mention} 升級到 lv.{_user['lv']} !!")
     
+async def check_in(channel):
+    assert isinstance(channel, discord.TextChannel)
+    remain_amount = 10
+    limit_amount = remain_amount
+    message = await channel.send("限時獎金")
+
+    thread = await message.create_thread(name="限時獎金")
+    msg = await thread.send(f"還剩 {remain_amount} 位名額")
+    def check(message: discord.Message):
+        return message.channel.id == thread.id and not message.author.bot
+    
+    limit_time = datetime.datetime.now() + datetime.timedelta(seconds=600)
+
+    for _ in range(limit_amount):
+        if (limit_time - datetime.datetime.now()).seconds <= 0:
+            await message.edit(f"獎金時間結束")
+            break
+
+        await bot.wait_for("message", check=check, timeout=(limit_time - datetime.datetime.now()).seconds)
+        remain_amount -= 1
+        await msg.edit(content=f"還剩 {remain_amount} 位名額")
+
+    if remain_amount <= 0:
+        await message.edit(content=f"獎金被搶完了")
+
+    await thread.delete()
+    return 
 
 @bot.event
 async def on_ready():
@@ -89,7 +159,6 @@ async def links(ctx):
     embed.set_footer(text=f"NTNU CSIE Camp 2025")
     await ctx.send(embed=embed)
 
-
 @bot.command()
 async def set_ch(ctx, chid):
     global msg_ch
@@ -106,8 +175,6 @@ async def set_ch(ctx, chid):
 
 # waitinglist = []
 response_buf = None
-
-
 
 @bot.command()
 async def tt(ctx: commands.Context):
@@ -177,9 +244,11 @@ async def mygo(ctx: commands.Context,*,cal):
     await ask_message.delete()
 
 
-#簽到指令
+# 簽到指令
 @bot.command(name="簽到")
 async def sign_in(ctx):
+    await check_in(ctx.message.channel)
+    return
     user_id = ctx.author.id
     if not check_user(user_id):
         init_game_user(user_id)
@@ -759,6 +828,7 @@ async def on_message(message):
         else:
             content = "迷你吉！"
         embed = discord.Embed(title=f"{content}", color=0x00ff00)
+        embed.set_image(url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSarEhHkzNHCsqlDN1ROMNxvDFmEpAvGmldXA&s")
         embed.set_footer(text=f"今日適合你的一句話：{quote}")
         await message.channel.send(embed=embed)
     
@@ -773,44 +843,6 @@ async def on_message(message):
             except ValueError:
                 await message.channel.send("請輸入正確的時間格式：mmddhhmm")
                 return
-
-        lesson_time = [
-            datetime.datetime(2025, 7, 1, 9, 30), # 2025-07-01 09:30 報到
-            datetime.datetime(2025, 7, 1, 10, 30), # 2025-07-01 10:30 開幕
-            datetime.datetime(2025, 7, 1, 12, 0), # 2025-07-01 12:00 LUNCH TIME
-            datetime.datetime(2025, 7, 1, 13, 30), # 2025-07-01 13:30 課程一
-            datetime.datetime(2025, 7, 1, 17, 40), # 2025-07-01 17:40 DINNER TIME
-            datetime.datetime(2025, 7, 1, 19, 0), # 2025-07-01 19:00 晚上活動
-            datetime.datetime(2025, 7, 1, 21, 0), # 2025-07-01 21:00 CODING/SLEEPING TIME
-
-            datetime.datetime(2025, 7, 2, 9, 40), # 2025-07-02 09:40 課程二
-            datetime.datetime(2025, 7, 2, 12, 0), # 2025-07-02 12:00 LUNCH TIME
-            datetime.datetime(2025, 7, 2, 13, 30), # 2025-07-02 13:30 選修課一
-            datetime.datetime(2025, 7, 2, 15, 10), # 2025-07-02 15:10 課程三
-            datetime.datetime(2025, 7, 2, 17, 50), # 2025-07-02 17:50 DINNER TIME
-            datetime.datetime(2025, 7, 2, 19, 0), # 2025-07-02 19:00 晚上活動
-            datetime.datetime(2025, 7, 2, 21, 0), # 2025-07-02 21:00 CODING/SLEEPING TIME
-
-            datetime.datetime(2025, 7, 3, 9, 40), # 2025-07-03 09:40 課程四
-            datetime.datetime(2025, 7, 3, 12, 0), # 2025-07-03 12:00 LUNCH TIME
-            datetime.datetime(2025, 7, 3, 13, 30), # 2025-07-03 13:30 選修課二
-            datetime.datetime(2025, 7, 3, 15, 10), # 2025-07-03 15:10 黑客松
-            datetime.datetime(2025, 7, 3, 17, 30), # 2025-07-03 17:30 DINNER TIME
-            datetime.datetime(2025, 7, 3, 19, 0), # 2025-07-03 19:00 晚上活動
-            datetime.datetime(2025, 7, 3, 21, 0), # 2025-07-03 21:00 CODING/SLEEPING TIME
-
-            datetime.datetime(2025, 7, 4, 9, 40), # 2025-07-04 09:40 黑客松 & 吃午餐
-            datetime.datetime(2025, 7, 4, 13, 20), # 2025-07-04 13:20 黑客松報告
-            datetime.datetime(2025, 7, 4, 15, 20), # 2025-07-04 15:20 閉幕
-            datetime.datetime(2025, 7, 4, 17, 0) # 2025-07-04 17:00 結束
-        ]
-
-        lesson_name = [
-            "報到", "開幕", "午餐時間", "課程一", "晚餐時間", "晚上活動", "Coding/Sleeping Time",
-            "課程二", "午餐時間", "選修課一", "課程三", "晚餐時間", "晚上活動", "Coding/Sleeping Time",
-            "課程四", "午餐時間", "選修課二", "黑客松", "晚餐時間", "晚上活動", "Coding/Sleeping Time",
-            "黑客松 & 吃午餐", "黑客松報告", "閉幕", "結束"
-        ]
 
         for lesson_idx in range(len(lesson_time)):
             if datetime_now > lesson_time[-(lesson_idx + 1)]:
