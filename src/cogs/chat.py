@@ -32,7 +32,7 @@ class Chat(commands.Cog):
             .replace(f"<@!{self.bot.user.id}>", "")
             .strip()
         )
-        print(f"收到 LLM 請求: {prompt}")
+
         if not prompt:
             await message.channel.send("找我有什麼事嗎？")
             return

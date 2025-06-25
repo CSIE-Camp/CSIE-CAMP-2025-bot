@@ -20,6 +20,7 @@ class StyleTransfer(commands.Cog):
             config.STYLE_TRANSFER_WENYAN_CHANNEL_ID: "wenyan",
             config.STYLE_TRANSFER_CATGIRL_CHANNEL_ID: "catgirl",
             config.STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID: "chuunibyou",
+            config.STYLE_TRANSFER_TSUNDERE_CHANNEL_ID: "tsundere",
         }
 
     @commands.Cog.listener()
