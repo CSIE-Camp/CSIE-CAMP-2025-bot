@@ -18,6 +18,9 @@ class Slot(commands.Cog):
             await ctx.send(
                 f"你現在只有 {current_money} 元，你卻想花 {amount} 元，我們不支援賒帳系統啦>.<"
             )
+            user["debt"] += 1
+            await achievement_manager.check_debt_achievements(ctx.author.id, user["debt"], ctx)
+            await user_data_manager.update_user_data(ctx.author.id, user)
             return
         if amount <= 0:
             await ctx.send("請輸入大於 0 的金額！")

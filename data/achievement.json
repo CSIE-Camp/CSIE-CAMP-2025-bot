@@ -11,6 +11,12 @@
         "description": "在拉霸遊戲中中了四個相同符號",
         "icon": "🎯"
     },
+    "kong_yiji": {
+        "id": "kong_yiji",
+        "name": "孔乙己",
+        "description": "賒帳 20 次",
+        "icon": "📜"
+    },
     "attendance_award": {
         "id": "attendance_award",
         "name": "全勤獎",
