@@ -27,10 +27,7 @@ class AchievementCog(commands.Cog):
             total_reward = 0
             for achievement in user_achievements:
                 achieved_text += f"{achievement.icon} **{achievement.name}**\n{achievement.description}\n"
-                if achievement.reward_money > 0:
-                    achieved_text += f"💰 獎勵: {achievement.reward_money} 元\n"
                 achieved_text += "\n"
-                total_reward += achievement.reward_money
             
             embed.add_field(
                 name=f"已獲得成就 ({len(user_achievements)}/{len(ACHIEVEMENTS)})",
@@ -59,8 +56,6 @@ class AchievementCog(commands.Cog):
             unachieved_text = ""
             for achievement in unachieved[:3]:  # 只顯示前3個未獲得的成就
                 unachieved_text += f"❓ **{achievement.name}**\n{achievement.description}\n"
-                if achievement.reward_money > 0:
-                    unachieved_text += f"💰 獎勵: {achievement.reward_money} 元\n"
                 unachieved_text += "\n"
             
             if len(unachieved) > 3:
@@ -88,8 +83,6 @@ class AchievementCog(commands.Cog):
         
         for achievement in ACHIEVEMENTS.values():
             field_value = f"{achievement.description}\n"
-            if achievement.reward_money > 0:
-                field_value += f"💰 獎勵: {achievement.reward_money} 元"
             
             embed.add_field(
                 name=f"{achievement.icon} {achievement.name}",

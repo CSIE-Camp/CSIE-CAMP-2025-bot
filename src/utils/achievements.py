@@ -15,23 +15,31 @@ from src.utils.user_data import user_data_manager
 class Achievement:
     """成就類別"""
     
-    def __init__(self, id: str, name: str, description: str, icon: str, reward_money: int = 0):
+    def __init__(self, id: str, name: str, description: str, icon: str):
         self.id = id
         self.name = name
         self.description = description
         self.icon = icon
-        self.reward_money = reward_money
 
 
 class Achievement:
     """成就類別"""
     
-    def __init__(self, id: str, name: str, description: str, icon: str, reward_money: int = 0):
+    def __init__(self, id: str, name: str, description: str, icon: str):
         self.id = id
         self.name = name
         self.description = description
         self.icon = icon
-        self.reward_money = reward_money
+
+
+class Achievement:
+    """成就類別"""
+    
+    def __init__(self, id: str, name: str, description: str, icon: str):
+        self.id = id
+        self.name = name
+        self.description = description
+        self.icon = icon
 
 
 def load_achievements() -> Dict[str, Achievement]:
@@ -47,8 +55,7 @@ def load_achievements() -> Dict[str, Achievement]:
                 id=data["id"],
                 name=data["name"],
                 description=data["description"],
-                icon=data["icon"],
-                reward_money=data.get("reward_money", 0)
+                icon=data["icon"]
             )
         
         print(f"已成功載入 {len(achievements)} 個成就定義")
@@ -101,7 +108,6 @@ class AchievementManager:
         # 授予成就
         achievement = ACHIEVEMENTS[achievement_id]
         user["achievements"].append(achievement_id)
-        user["money"] += achievement.reward_money
         
         await user_data_manager.update_user_data(user_id, user)
         
@@ -112,12 +118,6 @@ class AchievementManager:
                 description=f"**{achievement.icon} {achievement.name}**\n{achievement.description}",
                 color=0xFFD700
             )
-            if achievement.reward_money > 0:
-                embed.add_field(
-                    name="獎勵", 
-                    value=f"💰 {achievement.reward_money} 元", 
-                    inline=False
-                )
             embed.set_footer(text=f"成就獲得時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             await ctx.send(embed=embed)
         
