@@ -4,6 +4,7 @@ Cog for handling style transfer requests.
 
 import discord
 from discord.ext import commands
+import aiohttp
 
 from src import config
 from src.utils.prompt import STYLE_PROMPTS
@@ -16,12 +17,35 @@ class StyleTransfer(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.model = llm_model
-        self.style_channel_map = {
-            config.STYLE_TRANSFER_WENYAN_CHANNEL_ID: "wenyan",
-            config.STYLE_TRANSFER_CATGIRL_CHANNEL_ID: "catgirl",
-            config.STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID: "chuunibyou",
-            config.STYLE_TRANSFER_TSUNDERE_CHANNEL_ID: "tsundere",
+        # 建立一個整合的 style map，方便管理
+        self.style_map = {
+            config.STYLE_TRANSFER_WENYAN_CHANNEL_ID: {
+                "prompt_key": "wenyan",
+                "webhook_url": config.STYLE_TRANSFER_WENYAN_WEBHOOK_URL,
+                "username": "東漢書院諸葛亮",
+                "avatar_url": "https://i.meee.com.tw/0heQE1b.png",
+            },
+            config.STYLE_TRANSFER_CATGIRL_CHANNEL_ID: {
+                "prompt_key": "catgirl",
+                "webhook_url": config.STYLE_TRANSFER_CATGIRL_WEBHOOK_URL,
+                "username": "你的專屬貓娘",
+                "avatar_url": "https://i.meee.com.tw/IGfduzQ.png",
+            },
+            config.STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID: {
+                "prompt_key": "chuunibyou",
+                "webhook_url": config.STYLE_TRANSFER_CHUUNIBYOU_WEBHOOK_URL,
+                "username": "漆黑的墮天使",
+                "avatar_url": "https://i.meee.com.tw/CAKQSUn.png",
+            },
+            config.STYLE_TRANSFER_TSUNDERE_CHANNEL_ID: {
+                "prompt_key": "tsundere",
+                "webhook_url": config.STYLE_TRANSFER_TSUNDERE_WEBHOOK_URL,
+                "username": "傲嬌大小姐",
+                "avatar_url": "https://i.meee.com.tw/9dNqy3N.png",
+            },
         }
+        # 過濾掉未設定頻道的項目
+        self.style_map = {k: v for k, v in self.style_map.items() if k is not None}
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -29,32 +53,54 @@ class StyleTransfer(commands.Cog):
         if message.author.bot:
             return
 
-        if message.channel.id in self.style_channel_map:
+        if message.channel.id in self.style_map:
             await self.handle_style_transfer(message)
 
     async def handle_style_transfer(self, message: discord.Message):
-        """Handle the style transfer logic."""
+        """Handle the style transfer logic using Webhooks."""
         if not self.model:
             return
 
-        style_name = self.style_channel_map.get(message.channel.id)
-        if not style_name:
+        style_info = self.style_map.get(message.channel.id)
+        if not style_info:
             return
 
-        prompt = STYLE_PROMPTS.get(style_name)
+        webhook_url = style_info.get("webhook_url")
+        if not webhook_url:
+            print(f"錯誤：頻道 {message.channel.id} 的 Webhook URL 未設定。")
+            # 可以在此發送一個提示訊息，但為避免洗版，暫時只在後台提示
+            return
+
+        prompt_key = style_info.get("prompt_key")
+        prompt = STYLE_PROMPTS.get(prompt_key)
         if not prompt:
             return
 
-        async with message.channel.typing():
+        async with aiohttp.ClientSession() as session:
             try:
-                # The prompt already contains the system instruction for the style.
-                # The user's message is the final part of the content.
+                # 產生 LLM 回應
                 final_prompt = f"{prompt}\n\n使用者輸入：\n```{message.content}```"
                 llm_response = await self.model.generate_content_async(final_prompt)
-                await message.channel.send(llm_response.text)
+
+                # 透過 Webhook 發送訊息
+                payload = {
+                    "content": llm_response.text,
+                    "username": style_info.get("username"),
+                    "avatar_url": style_info.get("avatar_url"),
+                }
+                async with session.post(webhook_url, json=payload) as response:
+                    if not response.ok:
+                        print(f"使用 Webhook 發送訊息失敗: {response.status}")
+
             except Exception as e:
                 print(f"處理風格轉換時發生錯誤: {e}")
-                await message.channel.send("抱歉，轉換時出了點問題，請稍後再試。")
+                # 可以在此透過 Webhook 發送錯誤訊息
+                error_payload = {
+                    "content": "抱歉，轉換時出了點問題，請稍後再試。",
+                    "username": style_info.get("username"),
+                    "avatar_url": style_info.get("avatar_url"),
+                }
+                await session.post(webhook_url, json=error_payload)
 
 
 async def setup(bot: commands.Bot):
