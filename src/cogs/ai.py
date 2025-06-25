@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 AI 相關功能 Cog。
 
@@ -7,6 +6,7 @@ AI 相關功能 Cog。
 - 當圖片搜尋無果時，使用 Gemini LLM 生成相關台詞。
 - 當機器人被提及時，使用 Gemini LLM 進行對話。
 """
+
 import discord
 from discord.ext import commands
 import aiohttp

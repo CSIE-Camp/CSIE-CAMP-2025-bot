@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 使用者資料管理模組。
 
@@ -9,6 +8,7 @@
 它會在啟動時將資料載入記憶體，所有操作都針對記憶體中的資料進行，
 並在每次修改後將資料寫回檔案，確保資料的一致性。
 """
+
 import json
 import asyncio
 from typing import Dict, Any, Optional

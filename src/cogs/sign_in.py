@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 每日簽到功能 Cog。
 """
+
 import discord
 from discord.ext import commands
 import datetime

@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 圖片生成工具函式。
 
 此模組負責與後端圖片生成 API 進行溝通。
 """
+
 import requests
 import base64
 from io import BytesIO

@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 遊戲事件處理 Cog。
 
 負責監聽與遊戲機制相關的背景事件，最主要的就是使用者發言以獲得經驗值。
 """
+
 import discord
 from discord.ext import commands
 import random

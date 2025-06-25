@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 通用指令 Cog。
 
@@ -7,6 +6,7 @@
 - 抽籤
 - 查詢個人資料
 """
+
 import discord
 from discord.ext import commands
 import random

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 主機器人程式檔案。
 
@@ -6,6 +5,7 @@
 請從專案的根目錄（camp-public-bot）使用以下指令執行此檔案：
 python -m src.camp_bot
 """
+
 import os
 import asyncio
 import discord

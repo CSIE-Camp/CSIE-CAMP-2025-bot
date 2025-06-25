@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 """
 管理員專用指令 Cog。
 
 包含一些只有機器人擁有者才能使用的指令，
 例如設定頻道、重載 cogs 等。
 """
+
 import discord
 from discord.ext import commands
 from src import config

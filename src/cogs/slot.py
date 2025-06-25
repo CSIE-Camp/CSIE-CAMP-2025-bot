@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
-import discord
 from discord.ext import commands
 import random
 from src.utils.user_data import user_data_manager
-from src import config
 
 
 class Slot(commands.Cog):
