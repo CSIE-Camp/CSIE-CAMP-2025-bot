@@ -1,30 +1,30 @@
 {
-    "slot_jackpot": {
-        "id": "slot_god",
+    "slot_god": {
+        "id": 1,
         "name": "拉霸之神",
         "description": "在拉霸遊戲中中了五個相同符號",
         "icon": "🎰"
     },
     "slot_master": {
-        "id": "slot_master",
+        "id": 2,
         "name": "拉霸高手",
         "description": "在拉霸遊戲中中了四個相同符號",
         "icon": "🎯"
     },
     "kong_yiji": {
-        "id": "kong_yiji",
+        "id": 3,
         "name": "孔乙己",
         "description": "賒帳 20 次",
         "icon": "📜"
     },
     "attendance_award": {
-        "id": "attendance_award",
+        "id": 4,
         "name": "全勤獎",
         "description": "連續簽到4天",
         "icon": "🍀"
     },
     "rich_player": {
-        "id": "rich_player",
+        "id": 5,
         "name": "小富豪",
         "description": "擁有超過10000元",
         "icon": "💰"
