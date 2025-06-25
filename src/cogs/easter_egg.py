@@ -89,7 +89,7 @@ class EasterEgg(commands.Cog):
                     delete_after=5,
                 )
 
-    @commands.command(name="彩蛋", aliases=["myegg"], help="查詢自己找到的彩蛋。")
+    @commands.command(name="egg", aliases=["彩蛋"], help="查詢自己找到的彩蛋。")
     async def my_egg(self, ctx):
         """讓使用者查詢自己找到的彩蛋列表"""
         user = await self.user_data.get_user(ctx.author.id)
