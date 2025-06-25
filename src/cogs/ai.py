@@ -16,7 +16,7 @@ from google import genai
 from google.genai import types
 
 from src import config
-from src.utils.prompt import bot_self_prompt
+from src.utils.prompt import BOT_PROMPT
 
 
 class AI(commands.Cog):
@@ -95,9 +95,7 @@ class AI(commands.Cog):
             try:
                 response = self.client.models.generate_content(
                     model="gemini-2.5-flash",
-                    config=types.GenerateContentConfig(
-                        system_instruction=bot_self_prompt
-                    ),
+                    config=types.GenerateContentConfig(system_instruction=BOT_PROMPT),
                     contents=prompt,
                 )
                 # Discord 訊息長度限制為 2000 字元
