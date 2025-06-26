@@ -10,6 +10,7 @@ import json
 
 from src import config
 from src.utils.llm import llm_model
+from src.constants import MYGO_FILE
 
 
 class MyGo(commands.Cog):
@@ -24,7 +25,7 @@ class MyGo(commands.Cog):
         )
         # Load MyGo quotes
         try:
-            with open("data/mygo.json", "r", encoding="utf-8") as f:
+            with open(MYGO_FILE, "r", encoding="utf-8") as f:
                 self.mygo_quotes = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             self.mygo_quotes = []

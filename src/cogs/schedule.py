@@ -4,6 +4,8 @@ import json
 import datetime
 import random
 
+from src.constants import SCHEDULE_FILE
+
 
 class Schedule(commands.Cog):
     def __init__(self, bot):
@@ -11,7 +13,7 @@ class Schedule(commands.Cog):
         self.lessons = self.load_schedule()
 
     def load_schedule(self):
-        with open("data/schedule.json", "r", encoding="utf-8") as f:
+        with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         lessons = []
         for item in data["lessons"]:

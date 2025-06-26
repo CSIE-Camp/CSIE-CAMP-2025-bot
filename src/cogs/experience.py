@@ -11,6 +11,7 @@ import asyncio
 
 # 導入共享的 user_data_manager 以確保資料操作的同步與一致性
 from src.utils.user_data import user_data_manager
+from src.constants import Colors
 
 
 class GameEvents(commands.Cog):
@@ -63,7 +64,7 @@ class GameEvents(commands.Cog):
                     event_embed = discord.Embed(
                         title="✨ 好運降臨！",
                         description=f"{message.author.mention} 在路上撿到了 **{found_money}** 元！",
-                        color=discord.Color.gold(),
+                        color=Colors.WARNING,
                     )
                     await message.channel.send(embed=event_embed)
 
@@ -74,7 +75,7 @@ class GameEvents(commands.Cog):
                     event_embed = discord.Embed(
                         title="💸 壞事發生了...",
                         description=f"{message.author.mention} 不小心弄丟了 **{lost_money}** 元...",
-                        color=discord.Color.dark_grey(),
+                        color=Colors.ERROR,
                     )
                     await message.channel.send(embed=event_embed)
 
@@ -100,7 +101,7 @@ class GameEvents(commands.Cog):
                 level_up_embed = discord.Embed(
                     title="🎉 等級提升！",
                     description=f"恭喜 {message.author.mention} 升級到 **Lv. {user['lv']}**！",
-                    color=discord.Color.magenta(),
+                    color=Colors.PRIMARY,
                 )
                 level_up_embed.set_thumbnail(
                     url=(

@@ -1,244 +1,263 @@
 """
-通用指令 Cog。
+一般功能模組
 
-包含一些不屬於特定分類的常用指令，例如：
-- 顯示連結
-- 抽籤
-- 查詢個人資料
+提供基礎的機器人功能：
+- 用戶資料查詢
+- 每日抽籤運勢
+- 幫助指令
+- 相關連結顯示
 """
 
 import discord
 from discord.ext import commands
 import random
 import json
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from src.utils.image_gen import generate_bytesIO
 from src.utils.user_data import user_data_manager
-
-from src.utils.mygo import get_mygo_imgs
+from src.constants import (
+    DEFAULT_LEVEL,
+    DEFAULT_EXP,
+    DEFAULT_MONEY,
+    EXP_PER_LEVEL,
+    PROGRESS_BAR_LENGTH,
+    PROGRESS_BAR_FILLED,
+    PROGRESS_BAR_EMPTY,
+    FORTUNE_LEVELS,
+    QUOTE_REPLACEMENTS,
+    ACG_QUOTES_FILE,
+    Colors,
+)
 
 
 class General(commands.Cog):
-    """通用指令的集合。"""
+    """一般功能指令集合"""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        # 將資料檔案路徑改由 config 管理
-        self.acg_quotes_path = "data/acg_quotes.json"
-        self.acg_quotes = self._load_quotes()
+        self.quotes: List[str] = self._load_quotes()
 
-    def _load_quotes(self):
-        """從 JSON 檔案載入名言。"""
+    def _load_quotes(self) -> List[str]:
+        """載入動漫名言資料"""
         try:
-            with open(self.acg_quotes_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            with open(ACG_QUOTES_FILE, "r", encoding="utf-8") as f:
+                quotes = json.load(f)
+                print(f"📚 已載入 {len(quotes)} 條名言")
+                return quotes
         except FileNotFoundError:
-            print(f"錯誤：找不到名言檔案 '{self.acg_quotes_path}'")
+            print(f"❌ 找不到名言檔案：{ACG_QUOTES_FILE}")
             return []
         except json.JSONDecodeError:
-            print(f"錯誤：無法解析名言檔案 '{self.acg_quotes_path}'")
+            print(f"❌ 名言檔案格式錯誤：{ACG_QUOTES_FILE}")
             return []
 
     @commands.command(name="profile", aliases=["資料"])
     async def profile(
         self, ctx: commands.Context, member: Optional[discord.Member] = None
     ):
-        """查詢自己或指定成員的等級、經驗值和籌碼。"""
-        # 如果沒有指定成員，則預設為指令使用者本人
-        target_member = member or ctx.author
+        """查詢用戶的等級、經驗值和金錢資料"""
+        target = member or ctx.author
 
         async with ctx.typing():
-            user_data = await user_data_manager.get_user(target_member.id)
+            user_data = await user_data_manager.get_user(target)
 
-            level = user_data.get("lv", 1)
-            exp = user_data.get("exp", 0)
-            money = user_data.get("money", 0)
+            # 取得用戶資料
+            level = user_data.get("lv", DEFAULT_LEVEL)
+            exp = user_data.get("exp", DEFAULT_EXP)
+            money = user_data.get("money", DEFAULT_MONEY)
 
-            # 計算升級所需的經驗值
-            required_exp = 10 * level
+            # 計算經驗值進度
+            required_exp = self._calculate_required_exp(level)
+            progress = min(exp / required_exp, 1.0)
+            progress_bar = self._create_progress_bar(progress)
 
-            # --- 建立進度條 ---
-            progress = min(exp / required_exp, 1.0)  # 確保進度不超過 100%
-            bar_length = 10  # 長條圖的長度
-            filled_length = int(bar_length * progress)
-            progress_bar = "🟩" * filled_length + "⬛" * (bar_length - filled_length)
-
-            # --- 建立嵌入式訊息 ---
-            embed = discord.Embed(
-                title=f"✨ {target_member.display_name} 的個人資料",
-                color=target_member.color,
+            # 建立資料嵌入
+            embed = self._create_profile_embed(
+                target, level, exp, required_exp, money, progress_bar, progress
             )
-            embed.set_thumbnail(
-                url=(
-                    target_member.avatar.url
-                    if target_member.avatar
-                    else target_member.default_avatar.url
-                )
-            )
-
-            embed.add_field(name="等級 (LV)", value=f"`{level}`", inline=True)
-            embed.add_field(name="籌碼 (Money)", value=f"`💰 {money}`", inline=True)
-            embed.add_field(
-                name="經驗值 (EXP)",
-                value=f"`{exp} / {required_exp}`\n{progress_bar} `({progress:.1%})`",
-                inline=False,
-            )
-
-            embed.set_footer(text=f"由 {self.bot.user.name} 提供 | 使用 ?profile 查詢")
 
         await ctx.send(embed=embed)
 
-    @commands.command()
-    async def test_mg(self, ctx: commands.Context, keyword: str):
-        """tt"""
-        res = await get_mygo_imgs(keyword)
-        print(res.__str__())
-        await ctx.send(f"```json\n{res.__str__()}\n```")
+    def _calculate_required_exp(self, level: int) -> int:
+        """計算升級所需經驗值"""
+        return EXP_PER_LEVEL * level
 
-    @commands.command()
-    async def links(self, ctx: commands.Context):
-        """顯示各種有用的連結。"""
-        embed = discord.Embed(title="各種連結", color=discord.Color.blue())
+    def _create_progress_bar(
+        self, progress: float, length: int = PROGRESS_BAR_LENGTH
+    ) -> str:
+        """建立經驗值進度條"""
+        filled_length = int(length * progress)
+        return PROGRESS_BAR_FILLED * filled_length + PROGRESS_BAR_EMPTY * (
+            length - filled_length
+        )
+
+    def _create_profile_embed(
+        self,
+        user: discord.Member,
+        level: int,
+        exp: int,
+        required_exp: int,
+        money: int,
+        progress_bar: str,
+        progress: float,
+    ) -> discord.Embed:
+        """建立用戶資料嵌入訊息"""
+        embed = discord.Embed(
+            title=f"✨ {user.display_name} 的個人資料",
+            color=user.color or Colors.INFO,
+        )
+
+        # 設定縮圖
+        avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+        embed.set_thumbnail(url=avatar_url)
+
+        # 添加欄位
+        embed.add_field(name="🏆 等級", value=f"`{level}`", inline=True)
+        embed.add_field(name="💰 金錢", value=f"`{money:,}`", inline=True)
         embed.add_field(
-            name="範例程式碼與指令",
-            value="https://github.com/CSIE-Camp/example-code-2025",
+            name="⭐ 經驗值",
+            value=f"`{exp:,} / {required_exp:,}`\n{progress_bar} `({progress:.1%})`",
             inline=False,
         )
-        embed.add_field(
-            name="官方網站", value="https://camp.ntnucsie.info/", inline=False
+
+        embed.set_footer(text=f"數據由 {self.bot.user.name} 提供")
+        return embed
+
+    @commands.command(name="links")
+    async def links(self, ctx: commands.Context):
+        """顯示營隊相關連結"""
+        embed = discord.Embed(
+            title="🔗 營隊相關連結",
+            color=Colors.INFO,
+            description="以下是一些實用的營隊相關連結",
         )
+
+        links_data = [
+            ("📋 範例程式碼與指令", "https://github.com/CSIE-Camp/example-code-2025"),
+            ("🏠 官方網站", "https://camp.ntnucsie.info/"),
+        ]
+
+        for name, url in links_data:
+            embed.add_field(name=name, value=url, inline=False)
+
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await ctx.send(embed=embed)
 
     @commands.command(name="draw", aliases=["抽籤"])
-    async def draw_quote(self, ctx: commands.Context):
-        """抽籤決定今日運勢，並附上一句動漫名言。"""
-        if not self.acg_quotes:
-            await ctx.send(
-                "抱歉，我找不到任何名言可以抽...看來是我的腦袋空空了。", ephemeral=True
-            )
+    async def draw_fortune(self, ctx: commands.Context):
+        """每日抽籤，獲得運勢和動漫名言"""
+        if not self.quotes:
+            await ctx.send("😅 抱歉，名言庫暫時無法使用，請稍後再試")
             return
 
-        # --- 運勢計算 ---
+        # 生成運勢
+        fortune_text = self._generate_fortune()
+
+        # 選擇並處理名言
+        quote = self._process_quote(random.choice(self.quotes))
+
+        await self._send_fortune_message(ctx, fortune_text, quote)
+
+    def _generate_fortune(self) -> str:
+        """生成運勢結果"""
         result = random.randint(1, 100)
-        if result <= 1:
-            content = "不可思議的傳說大吉！✨"
-        elif result <= 3:
-            content = "超級無敵大吉！🚀"
-        elif result <= 5:
-            content = "無敵大吉！🎉"
-        elif result <= 10:
-            content = "大吉！😄"
-        elif result <= 30:
-            content = "中吉！😊"
-        elif result <= 50:
-            content = "普通吉！🙂"
-        elif result <= 70:
-            content = "小吉！🤔"
-        else:
-            content = "迷你吉！🤏"
+        for threshold, text in FORTUNE_LEVELS:
+            if result <= threshold:
+                return text
+        return "🤏 迷你吉！"
 
-        # --- 名言處理 ---
-        quote = random.choice(self.acg_quotes)
-        # 進行關鍵字替換
-        replacements = {
-            "oooo": "寫黑客松",
-            "ooo": "寫程式",
-            "oo": "程式",
-            "o": "卷",
-            "xx": "Python",
-        }
-        for old, new in replacements.items():
+    def _process_quote(self, quote: str) -> str:
+        """處理名言中的關鍵字替換"""
+        for old, new in QUOTE_REPLACEMENTS.items():
             quote = quote.replace(old, new)
+        return quote
 
-        # --- 圖片生成與訊息發送 ---
+    async def _send_fortune_message(
+        self, ctx: commands.Context, fortune: str, quote: str
+    ):
+        """發送運勢訊息（包含圖片）"""
         async with ctx.typing():
-            # 使用 image_gen 中的 generate_bytesIO
-            buffer = await generate_bytesIO(prompt=quote)
+            # 嘗試生成運勢圖片
+            image_buffer = await generate_bytesIO(prompt=quote)
 
-            if buffer:
-                file = discord.File(buffer, filename="fortune.png")
-                embed = discord.Embed(title=content, color=discord.Color.green())
+            embed = discord.Embed(title=fortune, color=Colors.SUCCESS)
+            embed.set_footer(text=f"今日適合你的一句話：{quote}")
+
+            if image_buffer:
+                file = discord.File(image_buffer, filename="fortune.png")
                 embed.set_image(url="attachment://fortune.png")
-                embed.set_footer(text=f"今日適合你的一句話：{quote}")
                 await ctx.send(embed=embed, file=file)
             else:
-                # 如果圖片生成失敗，則發送純文字版本
-                await ctx.send(f"**{content}**\n今日適合你的一句話：{quote}")
+                # 圖片生成失敗時發送純文字
+                embed.add_field(name="📝 今日名言", value=f"*{quote}*", inline=False)
+                await ctx.send(embed=embed)
 
     @commands.command(name="help", aliases=["幫助", "說明"])
     async def help_command(self, ctx: commands.Context):
-        """顯示所有指令的說明。"""
+        """顯示機器人功能說明"""
         embed = discord.Embed(
-            title="🤖 NTNU CSIE Camp 2025 機器人指令說明",
-            description="這是有關本機器人所有功能的詳細說明！",
-            color=discord.Color.purple(),
+            title="🤖 NTNU CSIE Camp 2025 機器人",
+            description="歡迎使用營隊機器人！以下是所有可用功能：",
+            color=Colors.PRIMARY,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
-        embed.add_field(
-            name="📖 一般指令",
-            value="""
-- **`?profile` / `?資料`**: 查詢自己或他人的個人資料。
-- **`?links`**: 顯示營隊相關的實用連結。
-- **`?draw` / `?抽籤`**: 每日抽籤，獲得運勢與動漫語錄。
-- **`?schedule` / `?查詢課表`**: 查詢營隊課程表。
+        # 功能分類
+        help_sections = [
+            (
+                "📖 一般功能",
+                [
+                    "`?profile` / `?資料` - 查詢個人資料",
+                    "`?links` - 顯示營隊相關連結",
+                    "`?draw` / `?抽籤` - 每日運勢抽籤",
+                    "`?schedule` / `?查詢課表` - 查詢課程表",
+                ],
+            ),
+            (
+                "💰 遊戲經濟",
+                [
+                    "`?sign_in` / `?簽到` - 每日簽到領金錢",
+                    "`?slot <金額>` / `?拉霸 <金額>` - 拉霸遊戲",
+                    "💬 聊天升級 - 發言獲得經驗值",
+                    "⏰ 定時活動 - 特定時間的金錢活動",
+                ],
+            ),
+            (
+                "🥚 收集系統",
+                [
+                    "`?egg` / `?彩蛋` - 查看收集的彩蛋",
+                    "🔍 彩蛋探索 - 輸入特殊關鍵字尋找彩蛋",
+                ],
+            ),
+            (
+                "🎭 AI 功能",
+                [
+                    "@機器人 - 與 AI 自由對話",
+                    "🎭 MyGo 頻道 - 角色圖片搜尋和對話",
+                    "✨ 風格轉換 - 多種角色風格轉換",
+                ],
+            ),
+            (
+                "🛠️ 管理員功能",
+                [
+                    "`?reload <模組>` / `?重載 <模組>` - 重載指定模組",
+                    "`?status` / `?狀態` - 顯示機器人運行狀態",
+                    "`?reset_flags` / `?重置彩蛋` - 重置所有用戶彩蛋",
+                    "`?scoreboard` / `?排行榜` - 手動更新排行榜",
+                    "`?cogs` / `?模組列表` - 列出所有可用模組",
+                ],
+            ),
+        ]
 
-            """,
-            inline=False,
-        )
+        for section_name, commands_list in help_sections:
+            commands_text = "\n".join(f"• {cmd}" for cmd in commands_list)
+            embed.add_field(name=section_name, value=commands_text, inline=False)
 
-        embed.add_field(
-            name="💰 遊戲與經濟系統",
-            value="""
-- **`?sign_in` / `?簽到`**: 每日簽到領取金錢。
-- **`?slot <金額>` / `?拉霸 <金額>`**: 玩拉霸機試試手氣。
-- **聊天升級**: 在伺服器中聊天即可獲得經驗值。
-- **定時金錢活動**: 特定時間會出現特殊活動，把握機會賺錢！
-
-            """,
-            inline=False,
-        )
-
-        embed.add_field(
-            name="🥚 彩蛋系統",
-            value="""
-- **`?egg` / `?彩蛋`**: 查看你已經收集到的彩蛋。
-- **觸發彩蛋**: 在伺服器中輸入隱藏的關鍵字來尋找彩蛋！
-
-            """,
-            inline=False,
-        )
-
-        embed.add_field(
-            name="🧠 AI 智慧功能",
-            value="""
-- **AI 聊天**: 在任何頻道 `@機器人` 即可與 AI 自由對話。
-- **MyGo 專屬頻道**: 輸入關鍵字，自動搜尋 MyGo 角色圖片或生成 AI 台詞。
-- **風格轉換頻道**: 在特定頻道發言，訊息會被轉換成文言文、貓娘、中二或傲嬌風格。
-
-            """,
-            inline=False,
-        )
-
-        embed.add_field(
-            name="🛠️ 管理員指令",
-            value="""
-- **`?reload <cog>`**: 重新載入功能模組 (僅限 Bot 擁有者)。
-- **`?reset_flags`**: 重設所有人的彩蛋狀態 (僅限管理員)。
-
-            """,
-            inline=False,
-        )
-
-        embed.set_footer(
-            text=f"由 {self.bot.user.name} 提供 | <> 中的是必要參數，[] 中的是選用參數。"
-        )
-
+        embed.set_footer(text=f"由 {self.bot.user.name} 提供服務")
         await ctx.send(embed=embed)
 
 
-async def setup(bot: commands.Bot):
-    """設置函數，用於將此 Cog 加入到 bot 中。"""
+async def setup(bot: commands.Bot) -> None:
+    """設置 Cog"""
     await bot.add_cog(General(bot))

@@ -1,3 +1,80 @@
+# 環境變數和敏感資料
 .env
-__pycache__
+*.env
+
+# Python 快取檔案
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 分發檔案
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# 測試覆蓋率
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# 虛擬環境
+.env/
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE 設定檔
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日誌檔案
+*.log
+
+# 用戶資料（機敏資料）
 user_data.json
+data/user_data.json
+
+# 臨時檔案
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# 備份檔案
+*.bak
+*.backup

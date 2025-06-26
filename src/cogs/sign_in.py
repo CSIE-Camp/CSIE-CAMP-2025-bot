@@ -10,6 +10,7 @@ import random
 # 導入共享的 user_data_manager 實例，確保資料操作的同步與一致性
 from src.utils.user_data import user_data_manager
 from src.utils.achievements import achievement_manager
+from src.constants import Colors
 
 
 class SignIn(commands.Cog):
@@ -77,7 +78,7 @@ class SignIn(commands.Cog):
         embed = discord.Embed(
             title="簽到成功！",
             description=f"🎉 {ctx.author.mention} 你好！",
-            color=discord.Color.gold(),
+            color=Colors.WARNING,
         )
         embed.add_field(name="基本獎勵", value=f"💰 {base_reward}", inline=True)
         embed.add_field(name="連續簽到", value=f"🔥 {new_streak} 天", inline=True)

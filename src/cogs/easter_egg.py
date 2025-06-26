@@ -4,6 +4,7 @@ import json
 import datetime
 from src import config
 from src.utils.user_data import user_data_manager
+from src.constants import Colors, FLAGS_FILE
 
 
 class EasterEgg(commands.Cog):
@@ -13,7 +14,7 @@ class EasterEgg(commands.Cog):
         self.user_data = user_data_manager
 
     def load_flags_data(self):
-        with open("data/flags.json", "r", encoding="utf-8") as f:
+        with open(FLAGS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
 
     @commands.Cog.listener()
@@ -63,7 +64,7 @@ class EasterEgg(commands.Cog):
                     embed = discord.Embed(
                         title="🎉 彩蛋尋獲！ 🎉",
                         description=f"**{message.author.mention}** 成功找到了彩蛋！",
-                        color=discord.Color.gold(),
+                        color=Colors.WARNING,
                         timestamp=datetime.datetime.now(),
                     )
                     embed.set_thumbnail(url=message.author.display_avatar.url)
@@ -108,7 +109,7 @@ class EasterEgg(commands.Cog):
 
         embed = discord.Embed(
             title=f"**{ctx.author.display_name}** 找到的彩蛋",
-            color=discord.Color.gold(),
+            color=Colors.WARNING,
         )
         embed.description = "\n".join(f"✅ {name}" for name in found_flags_names)
         await ctx.send(embed=embed)
