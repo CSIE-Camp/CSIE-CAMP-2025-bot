@@ -17,6 +17,9 @@ def get_int_env(key: str) -> Optional[int]:
     return int(value) if value else None
 
 
+# ===== 基本設定 =====
+ADMIN_ROLE_ID = get_int_env("ADMIN_ROLE_ID")
+
 # ===== API Keys =====
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -86,5 +89,3 @@ STYLE_TRANSFER_CONFIG = {
 
 # ===== 除錯設定 =====
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-DEVELOPER_ID = get_int_env("DEVELOPER_ID")
-ADMIN_ROLE_ID = get_int_env("ADMIN_ROLE_ID")

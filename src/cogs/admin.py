@@ -19,16 +19,13 @@ from src import config
 
 async def check_admin_permissions(interaction: discord.Interaction) -> bool:
     """
-    檢查使用者是否為機器人擁有者或具有管理員身份組。
-    - 機器人擁有者始終擁有權限。
-    - 如果設定了 ADMIN_ROLE_ID，則擁有該身份組的成員也擁有權限。
+    檢查使用者是否具有管理員身份組。
+    - 只有擁有 ADMIN_ROLE_ID 身份組的成員才擁有權限。
+    - 如果未設定 ADMIN_ROLE_ID，則所有指令都無法使用。
     """
-    if await interaction.client.is_owner(interaction.user):
-        return True
-
     admin_role_id = config.ADMIN_ROLE_ID
     if not admin_role_id:
-        return False  # 未設定身份組，且非擁有者
+        return False  # 未設定身份組
 
     if isinstance(interaction.user, discord.Member):
         return any(role.id == admin_role_id for role in interaction.user.roles)
@@ -134,7 +131,7 @@ class Admin(commands.Cog):
         name="reset_flags",
         description="重置所有用戶的彩蛋觸發狀態",
     )
-    @app_commands.default_permissions(administrator=True)
+    @app_commands.check(check_admin_permissions)
     async def reset_flags(self, interaction: discord.Interaction):
         """重置所有用戶的彩蛋旗標"""
         await interaction.response.defer()
