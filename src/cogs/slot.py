@@ -36,7 +36,7 @@ class Slot(commands.Cog):
             "<:mushroom:1385577154775089182>",
             "<:dino:1385577110965321840>",
             "<:money:1385577138727686286>",
-            "<:block:1385577076865630300>",
+            "<:monitor:1385577094393757768>",
         ]
 
         result = [random.choice(symbols) for _ in range(5)]
@@ -97,7 +97,6 @@ class Slot(commands.Cog):
             await ctx.send("請輸入一個有效的數字作為籌碼數量！", ephemeral=True)
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("請輸入要下的籌碼數量！", ephemeral=True)
-
 
 async def setup(bot):
     await bot.add_cog(Slot(bot))

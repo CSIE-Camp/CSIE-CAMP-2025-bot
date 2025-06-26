@@ -84,6 +84,7 @@ class UserDataManager:
             "lv": DEFAULT_LEVEL,
             "exp": DEFAULT_EXP,
             "money": DEFAULT_MONEY,
+            "debt": 0,
             "last_sign_in": None,
             "sign_in_streak": 0,
         }
