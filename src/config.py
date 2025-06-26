@@ -27,6 +27,11 @@ EASTER_EGG_CHANNEL_ID = (
     if os.getenv("EASTER_EGG_CHANNEL_ID") != None
     else None
 )
+SCOREBOARD_CHANNEL_ID = (
+    int(os.getenv("SCOREBOARD_CHANNEL_ID"))
+    if os.getenv("SCOREBOARD_CHANNEL_ID") != None
+    else None
+)
 
 # --- Style Transfer Channel IDs ---
 STYLE_TRANSFER_WENYAN_CHANNEL_ID = (

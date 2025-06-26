@@ -52,6 +52,17 @@ class Admin(commands.Cog):
 
         await ctx.send("所有彩蛋都已重置。")
 
+    @commands.command(name="scoreboard", aliases=["排行榜"])
+    @commands.has_permissions(administrator=True)
+    async def scoreboard(self, ctx: commands.Context):
+        """手動更新排行榜訊息。"""
+        scoreboard_cog = self.bot.get_cog("Scoreboard")
+        if scoreboard_cog:
+            scoreboard_cog.update_scoreboard.restart()
+            await ctx.send("✅ 已手動觸發排行榜更新。")
+        else:
+            await ctx.send("❌ Scoreboard 功能未載入。")
+
 
 async def setup(bot: commands.Bot):
     """設置函數，用於將此 Cog 加入到 bot 中。"""

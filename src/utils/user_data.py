@@ -97,7 +97,8 @@ class UserData:
                 "money": 100,
                 "last_sign_in": None,
                 "sign_in_streak": 0,
-                "achievements": []
+                "achievements": [],
+                "found_flags": [],
             }
             self.users[user_id_str] = default_data
             await self._save_data()
@@ -105,12 +106,33 @@ class UserData:
 
     async def update_user_data(self, user_id: int, data: UserRecord):
         """
-        以原子操作更新指定使用者的資料，並將其儲存回檔案。
+        更新指定使用者 ID 的資料，並將變更儲存到檔案中。
         """
         user_id_str = str(user_id)
         async with self._lock:
             self.users[user_id_str] = data
             await self._save_data()
+
+    def get_top_users(self, sort_by: str, limit: int = 10):
+        """
+        獲取排序後的使用者列表。
+
+        Args:
+            sort_by (str): 用於排序的鍵（例如 "money", "exp", "achievements", "found_flags"）。
+            limit (int): 要返回的使用者數量。
+
+        Returns:
+            list: 排序後的使用者元組列表 (user_id, data)。
+        """
+        if sort_by in ["achievements", "found_flags"]:
+            # 對於列表類型，我們按其長度排序
+            key_func = lambda item: len(item[1].get(sort_by, []))
+        else:
+            # 對於數值類型，直接按其值排序
+            key_func = lambda item: item[1].get(sort_by, 0)
+
+        sorted_users = sorted(self.users.items(), key=key_func, reverse=True)
+        return sorted_users[:limit]
 
 
 # 建立一個全域唯一的 UserData 實例
