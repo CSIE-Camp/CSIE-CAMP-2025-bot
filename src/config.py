@@ -88,4 +88,3 @@ STYLE_TRANSFER_CONFIG = {
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 DEVELOPER_ID = get_int_env("DEVELOPER_ID")
 ADMIN_ROLE_ID = get_int_env("ADMIN_ROLE_ID")
-DEV_GUILD_ID = get_int_env("DEV_GUILD_ID")

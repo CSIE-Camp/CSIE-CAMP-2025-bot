@@ -41,15 +41,8 @@ class CampBot:
             """手動同步斜線指令"""
             await ctx.send("🔄 正在同步斜線指令...")
             try:
-                if config.DEV_GUILD_ID:
-                    guild = discord.Object(id=config.DEV_GUILD_ID)
-                    synced = await self.bot.tree.sync(guild=guild)
-                    await ctx.send(
-                        f"✅ 成功在開發者伺服器同步 {len(synced)} 個斜線指令！"
-                    )
-                else:
-                    synced = await self.bot.tree.sync()
-                    await ctx.send(f"✅ 成功全域同步 {len(synced)} 個斜線指令！")
+                synced = await self.bot.tree.sync()
+                await ctx.send(f"✅ 成功全域同步 {len(synced)} 個斜線指令！")
             except Exception as e:
                 await ctx.send(f"❌ 同步失敗：{e}")
 
@@ -64,9 +57,12 @@ class CampBot:
         print("🎮 機器人狀態已設定完成")
 
         # 自動同步斜線指令
-        if config.DEV_GUILD_ID:
-            guild = discord.Object(id=config.DEV_GUILD_ID)
-            await self.bot.tree.sync(guild=guild)
+        try:
+
+            global_synced = await self.bot.tree.sync()
+            print(f"🌍 已全域同步 {len(global_synced)} 個斜線指令")
+        except Exception as e:
+            print(f"⚠️ 斜線指令同步失敗：{e}")
 
         print("=" * 50)
 

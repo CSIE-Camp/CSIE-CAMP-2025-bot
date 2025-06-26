@@ -239,12 +239,6 @@ class Games(commands.Cog):
             interaction.user.id, user["money"], interaction
         )
 
-    @game.command(name="拉霸", description="拉霸遊戲 (slot的別名)")
-    @app_commands.describe(amount="要下的籌碼數量")
-    async def slot_alias(self, interaction: discord.Interaction, amount: int):
-        """slot 指令的別名"""
-        await self.slot(interaction, amount)
-
     @game.command(name="dice", description="骰子比大小")
     @app_commands.describe(amount="要下的賭注金額")
     async def dice(self, interaction: discord.Interaction, amount: int):
@@ -289,12 +283,6 @@ class Games(commands.Cog):
         if winnings != 0:
             await user_data_manager.update_user_data(interaction.user.id, user)
         await interaction.followup.send(msg)
-
-    @game.command(name="骰子", description="骰子比大小 (dice的別名)")
-    @app_commands.describe(amount="要下的賭注金額")
-    async def dice_alias(self, interaction: discord.Interaction, amount: int):
-        """dice 指令的別名"""
-        await self.dice(interaction, amount)
 
     @game.command(name="rps", description="剪刀石頭布")
     @app_commands.describe(opponent="挑戰的對手", amount="賭注金額")
@@ -347,17 +335,6 @@ class Games(commands.Cog):
                 "來跟我一決勝負吧！請出拳：", view=view
             )
 
-    @game.command(name="剪刀石頭布", description="剪刀石頭布 (rps的別名)")
-    @app_commands.describe(opponent="挑戰的對手", amount="賭注金額")
-    async def rps_alias(
-        self,
-        interaction: discord.Interaction,
-        opponent: Optional[discord.Member] = None,
-        amount: int = 0,
-    ):
-        """rps 指令的別名"""
-        await self.rps(interaction, opponent, amount)
-
     @game.command(name="guess", description="猜按鈕遊戲")
     @app_commands.describe(amount="要下的賭注金額")
     async def guess(self, interaction: discord.Interaction, amount: int):
@@ -382,92 +359,6 @@ class Games(commands.Cog):
         await interaction.response.send_message(
             "選擇一個按鈕！", view=view, ephemeral=True
         )
-
-    @game.command(name="猜按鈕", description="猜按鈕遊戲 (guess的別名)")
-    @app_commands.describe(amount="要下的賭注金額")
-    async def guess_alias(self, interaction: discord.Interaction, amount: int):
-        """guess 指令的別名"""
-        await self.guess(interaction, amount)
-
-    @game.command(name="number", description="猜數字遊戲 (1-100)")
-    @app_commands.describe(number="你要猜的數字，不輸入則為開始或提示")
-    async def number(
-        self, interaction: discord.Interaction, number: Optional[int] = None
-    ):
-        """猜數字遊戲"""
-        channel_id = interaction.channel.id
-
-        if number is None:
-            if channel_id not in self.number_games:
-                number_to_guess = random.randint(1, 100)
-                self.number_games[channel_id] = {
-                    "number": number_to_guess,
-                    "attempts": 0,
-                }
-                await interaction.response.send_message(
-                    "猜數字遊戲開始！我已經想好了一個 1 到 100 之間的數字。用 `/game number number:<你的猜測>` 來猜猜看吧！"
-                )
-            else:
-                await interaction.response.send_message(
-                    "遊戲已經在進行中了！用 `/game number number:<你的猜測>` 來猜猜看吧！",
-                    ephemeral=True,
-                )
-            return
-
-        if channel_id not in self.number_games:
-            await interaction.response.send_message(
-                "遊戲還沒開始呢！請先用 `/game number` 開始新遊戲。", ephemeral=True
-            )
-            return
-
-        game = self.number_games[channel_id]
-        game["attempts"] += 1
-        number_to_guess = game["number"]
-        attempts = game["attempts"]
-
-        if not (1 <= number <= 100):
-            await interaction.response.send_message(
-                "請輸入 1 到 100 之間的數字！", ephemeral=True
-            )
-            return
-
-        if number < number_to_guess:
-            await interaction.response.send_message(
-                f"你猜的 `{number}` 太小了！再猜一次。"
-            )
-        elif number > number_to_guess:
-            await interaction.response.send_message(
-                f"你猜的 `{number}` 太大了！再猜一次。"
-            )
-        else:
-            winnings = 100 - (attempts * 5)
-            if winnings < 10:
-                winnings = 10
-
-            user = await user_data_manager.get_user(
-                interaction.user.id, interaction.user
-            )
-            user["money"] += winnings
-            await user_data_manager.update_user_data(interaction.user.id, user)
-
-            await interaction.response.send_message(
-                f"恭喜 {interaction.user.mention} 猜對了！數字是 {number_to_guess}。你總共猜了 {attempts} 次，獲得了 {winnings} 元！"
-            )
-
-            # Check achievements
-            await achievement_manager.check_money_achievements(
-                interaction.user.id, user["money"], interaction
-            )
-
-            del self.number_games[channel_id]
-
-    @game.command(name="猜數字", description="猜數字遊戲 (1-100) (number的別名)")
-    @app_commands.describe(number="你要猜的數字，不輸入則為開始或提示")
-    async def number_alias(
-        self, interaction: discord.Interaction, number: Optional[int] = None
-    ):
-        """number 指令的別名"""
-        await self.number(interaction, number)
 
 
 async def setup(bot):

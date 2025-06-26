@@ -206,7 +206,7 @@ class General(commands.Cog):
                 "game guess",
             ],
             "🏆 成就彩蛋": ["achievements", "egg"],
-            "🎵 MyGo 專屬": ["mygo", "mygo_quote"],
+            "🎵 MyGo 專屬": ["mygo", "quote"],
             "🛠️ 管理功能": ["reload", "status", "reset_flags", "cogs", "set_schedule"],
         }
 

@@ -11,7 +11,7 @@
 import discord
 from discord.ext import commands
 import aiohttp
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 from src import config
 from src.utils.prompt import STYLE_PROMPTS
@@ -78,9 +78,11 @@ class StyleTransfer(commands.Cog):
         bucket = self._cooldown.get_bucket(message)
         retry_after = bucket.update_rate_limit()
         if retry_after:
-            await message.reply(
-                f"⏰ 你的發言太快了，請在 {retry_after:.1f} 秒後再試", delete_after=5
-            )
+            # 直接刪除訊息，不發送任何警告
+            try:
+                await message.delete()
+            except discord.Forbidden:
+                pass  # 沒有刪除權限時忽略
             return
 
         await self._process_style_transfer(message)
@@ -93,7 +95,6 @@ class StyleTransfer(commands.Cog):
 
         style_config = self.style_mapping[message.channel.id]
         style_key = style_config["style_key"]
-        webhook_url = style_config["webhook_url"]
 
         # 獲取風格提示詞
         prompt = STYLE_PROMPTS.get(style_key)
@@ -102,21 +103,38 @@ class StyleTransfer(commands.Cog):
             return
 
         try:
-            await self._send_style_transfer_message(
-                message.content, style_config, prompt
-            )
+            # 顯示機器人正在輸入的狀態
+            async with message.channel.typing():
+                await self._send_style_transfer_message(
+                    message.content, style_config, prompt
+                )
 
-            # 刪除原始訊息（如果有權限）
+        except aiohttp.ClientError as e:
+            print(f"❌ 網路請求失敗：{e}")
+            # 發送錯誤訊息
+            error_payload = {
+                "content": "抱歉，處理你的訊息時出了點問題，請稍後再試～",
+                "username": style_config["username"],
+                "avatar_url": style_config["avatar_url"],
+            }
             try:
-                await message.delete()
-            except discord.Forbidden:
-                pass  # 沒有刪除權限時忽略
-
-        except Exception as e:
-            print(f"❌ 風格轉換失敗：{e}")
-            await self._send_error_message(
-                "抱歉，處理你的訊息時出了點問題，請稍後再試～", style_config
-            )
+                async with aiohttp.ClientSession() as session:
+                    await session.post(style_config["webhook_url"], json=error_payload)
+            except Exception:
+                pass  # 忽略錯誤訊息發送失敗的情況
+        except (ValueError, AttributeError, KeyError) as e:
+            print(f"❌ 資料處理失敗：{e}")
+            # 發送錯誤訊息
+            error_payload = {
+                "content": "抱歉，處理你的訊息時出了點問題，請稍後再試～",
+                "username": style_config["username"],
+                "avatar_url": style_config["avatar_url"],
+            }
+            try:
+                async with aiohttp.ClientSession() as session:
+                    await session.post(style_config["webhook_url"], json=error_payload)
+            except Exception:
+                pass  # 忽略錯誤訊息發送失敗的情況
 
     async def _send_style_transfer_message(
         self, original_content: str, style_config: Dict[str, Any], prompt: str
@@ -127,37 +145,21 @@ class StyleTransfer(commands.Cog):
         response = await self.model.generate_content_async(full_prompt)
 
         if not response.text or response.text.strip() == "":
-            await self._send_error_message("🤔 我不知道該說什麼...", style_config)
-            return
+            final_content = "🤔 我不知道該說什麼..."
+        else:
+            final_content = response.text
 
-        # 準備 Webhook 訊息
+        # 直接發送最終訊息
         payload = {
-            "content": response.text,
+            "content": final_content,
             "username": style_config["username"],
             "avatar_url": style_config["avatar_url"],
         }
 
-        # 發送 Webhook 訊息
         async with aiohttp.ClientSession() as session:
             async with session.post(style_config["webhook_url"], json=payload) as resp:
-                if not resp.ok:
-                    raise Exception(f"Webhook 請求失敗：{resp.status}")
-
-    async def _send_error_message(
-        self, error_content: str, style_config: Dict[str, Any]
-    ) -> None:
-        """發送錯誤訊息"""
-        error_payload = {
-            "content": error_content,
-            "username": style_config["username"],
-            "avatar_url": style_config["avatar_url"],
-        }
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                await session.post(style_config["webhook_url"], json=error_payload)
-        except Exception as e:
-            print(f"❌ 發送錯誤訊息失敗：{e}")
+                if resp.status not in [200, 204]:
+                    raise aiohttp.ClientError(f"Webhook 請求失敗：{resp.status}")
 
 
 async def setup(bot: commands.Bot) -> None:
