@@ -51,10 +51,16 @@ class UserDataManager:
                 if len(valid_users) != len(all_users):
                     removed_count = len(all_users) - len(valid_users)
                     print(f"🧹 已清理 {removed_count} 筆無效資料")
-                    self.users = valid_users
+
+                # 遷移現有用戶資料格式（向後相容）
+                migrated_users = self._migrate_existing_user_data(valid_users)
+
+                self.users = migrated_users
+                if migrated_users != valid_users:
+                    print("🔄 已遷移用戶資料格式以確保一致性")
                     await self._save_data()
                 else:
-                    self.users = all_users
+                    self.users = valid_users
 
                 print(f"✅ 已載入 {len(self.users)} 位用戶的資料")
 
@@ -78,8 +84,9 @@ class UserDataManager:
     def _create_default_user_data(
         self, user_obj: Optional[discord.User] = None
     ) -> UserRecord:
-        """建立新用戶的預設資料"""
-        base_data = {
+        """建立新用戶的預設資料，包含所有必要欄位"""
+        # 創建完整的用戶資料結構，確保格式固定不變
+        user_data = {
             "name": user_obj.name if user_obj else "Unknown",
             "lv": DEFAULT_LEVEL,
             "exp": DEFAULT_EXP,
@@ -87,30 +94,29 @@ class UserDataManager:
             "debt": 0,
             "last_sign_in": None,
             "sign_in_streak": 0,
+            # 從 DEFAULT_USER_FIELDS 複製所有預設欄位
+            "achievements": DEFAULT_USER_FIELDS.get("achievements", []).copy(),
+            "found_flags": DEFAULT_USER_FIELDS.get("found_flags", []).copy(),
         }
 
-        # 合併預設欄位
-        base_data.update(DEFAULT_USER_FIELDS)
-        return base_data
-
-    def _ensure_user_data_integrity(
-        self, user_data: UserRecord, user_obj: Optional[discord.User] = None
-    ) -> bool:
-        """確保用戶資料完整性，返回是否有更新"""
-        updated = False
-
-        # 更新用戶名稱
-        if user_obj and user_data.get("name") != user_obj.name:
-            user_data["name"] = user_obj.name
-            updated = True
-
-        # 確保必要欄位存在（向後相容）
+        # 確保包含所有 DEFAULT_USER_FIELDS 中的欄位（以防未來新增）
         for field, default_value in DEFAULT_USER_FIELDS.items():
             if field not in user_data:
-                user_data[field] = default_value
-                updated = True
+                if isinstance(default_value, list):
+                    user_data[field] = default_value.copy()
+                else:
+                    user_data[field] = default_value
 
-        return updated
+        return user_data
+
+    def _update_user_name_if_needed(
+        self, user_data: UserRecord, user_obj: Optional[discord.User] = None
+    ) -> bool:
+        """僅更新用戶名稱（如果需要），返回是否有更新"""
+        if user_obj and user_data.get("name") != user_obj.name:
+            user_data["name"] = user_obj.name
+            return True
+        return False
 
     async def get_user(
         self, user_identifier: UserIdentifier, user_obj: Optional[discord.User] = None
@@ -139,12 +145,13 @@ class UserDataManager:
                     print(f"👤 新用戶註冊：{user_obj.name if user_obj else user_id}")
                     self.users[user_id_str] = self._create_default_user_data(user_obj)
                     await self._save_data()
+                    return self.users[user_id_str]  # 直接返回新創建的完整資料
 
-        # 確保資料完整性
+        # 對於現有用戶，僅更新用戶名稱（如果需要）
         user_data = self.users[user_id_str]
-        needs_update = self._ensure_user_data_integrity(user_data, user_obj)
+        name_updated = self._update_user_name_if_needed(user_data, user_obj)
 
-        if needs_update:
+        if name_updated:
             await self.update_user_data(user_id, user_data)
 
         return user_data
@@ -191,6 +198,41 @@ class UserDataManager:
 
         sorted_users = sorted(self.users.items(), key=get_sort_key, reverse=True)
         return sorted_users[:limit]
+
+    def _migrate_existing_user_data(
+        self, users_data: Dict[str, UserRecord]
+    ) -> Dict[str, UserRecord]:
+        """遷移現有用戶資料，確保格式統一（向後相容）"""
+        migrated_users = {}
+
+        for user_id, user_data in users_data.items():
+            migrated_data = user_data.copy()
+
+            # 確保所有必要欄位存在
+            for field, default_value in DEFAULT_USER_FIELDS.items():
+                if field not in migrated_data:
+                    if isinstance(default_value, list):
+                        migrated_data[field] = default_value.copy()
+                    else:
+                        migrated_data[field] = default_value
+
+            # 確保基本欄位存在
+            if "lv" not in migrated_data:
+                migrated_data["lv"] = DEFAULT_LEVEL
+            if "exp" not in migrated_data:
+                migrated_data["exp"] = DEFAULT_EXP
+            if "money" not in migrated_data:
+                migrated_data["money"] = DEFAULT_MONEY
+            if "debt" not in migrated_data:
+                migrated_data["debt"] = 0
+            if "last_sign_in" not in migrated_data:
+                migrated_data["last_sign_in"] = None
+            if "sign_in_streak" not in migrated_data:
+                migrated_data["sign_in_streak"] = 0
+
+            migrated_users[user_id] = migrated_data
+
+        return migrated_users
 
 
 # 全域用戶資料管理器實例

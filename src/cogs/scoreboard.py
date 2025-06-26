@@ -64,7 +64,7 @@ class Scoreboard(commands.Cog):
     async def _create_leaderboard_text(self, top_users, formatter):
         """Helper to create formatted leaderboard text with medals."""
         if not top_users:
-            return "> 尚無資料"
+            return "尚無資料"
 
         medals = {1: "🥇", 2: "🥈", 3: "🥉"}
         lines = []
