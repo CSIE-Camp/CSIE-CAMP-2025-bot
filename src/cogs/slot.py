@@ -11,19 +11,22 @@ class Slot(commands.Cog):
     @commands.command(name="拉霸", aliases=["slot"])
     async def slot(self, ctx, amount: int):
         """拉霸遊戲"""
-        user = await user_data_manager.get_user(ctx.author.id)
+        user = await user_data_manager.get_user(ctx.author.id, ctx.author)
         current_money = user["money"]
 
         if amount > current_money:
             await ctx.send(
-                f"你現在只有 {current_money} 元，你卻想花 {amount} 元，我們不支援賒帳系統啦>.<"
+                f"你現在只有 {current_money} 元，你卻想花 {amount} 元，我們不支援賒帳系統啦>.<",
+                ephemeral=True,
             )
             user["debt"] += 1
-            await achievement_manager.check_debt_achievements(ctx.author.id, user["debt"], ctx)
+            await achievement_manager.check_debt_achievements(
+                ctx.author.id, user["debt"], ctx
+            )
             await user_data_manager.update_user_data(ctx.author.id, user)
             return
         if amount <= 0:
-            await ctx.send("請輸入大於 0 的金額！")
+            await ctx.send("請輸入大於 0 的金額！", ephemeral=True)
             return
 
         symbols = [
@@ -40,9 +43,9 @@ class Slot(commands.Cog):
         result_str = "".join(result)
         author_mention = ctx.author.mention
         author_name = ctx.author.name
-        await ctx.send(f"{result_str}")
+        await ctx.send(f"{result_str}", ephemeral=True)
 
-        max_count = max(result.count(symbol) for symbol in symbols)
+        max_count = max(result.count(symbol) for symbol in set(symbols))
         winnings = 0
 
         if max_count == 5:
@@ -78,20 +81,22 @@ class Slot(commands.Cog):
 
         user["money"] += winnings
         await user_data_manager.update_user_data(ctx.author.id, user)
-        await ctx.send(msg)
-        
+        await ctx.send(msg, ephemeral=True)
+
         # 檢查拉霸成就
         await achievement_manager.check_slot_achievements(ctx.author.id, max_count, ctx)
-        
+
         # 檢查金錢成就
-        await achievement_manager.check_money_achievements(ctx.author.id, user["money"], ctx)
+        await achievement_manager.check_money_achievements(
+            ctx.author.id, user["money"], ctx
+        )
 
     @slot.error
     async def slot_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
-            await ctx.send("請輸入一個有效的數字作為籌碼數量！")
+            await ctx.send("請輸入一個有效的數字作為籌碼數量！", ephemeral=True)
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("請輸入要下的籌碼數量！")
+            await ctx.send("請輸入要下的籌碼數量！", ephemeral=True)
 
 
 async def setup(bot):

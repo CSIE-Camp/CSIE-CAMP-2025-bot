@@ -1,111 +1,53 @@
 import discord
 from discord.ext import commands, tasks
-import datetime
 import random
-import json
-from src.utils.user_data import UserData
+
+# 導入共享的 user_data_manager 以確保資料操作的同步與一致性
+from src.utils.user_data import user_data_manager
 from src import config
 
 
 class Tasks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.user_data = UserData(config.USER_DATA_FILE)
-        self.check_in_times = []
-        self.schedule_check_in.start()
+        self.random_red_packet_loop.start()
 
     def cog_unload(self):
-        self.schedule_check_in.cancel()
+        self.random_red_packet_loop.cancel()
 
-    @tasks.loop(seconds=1)
-    async def schedule_check_in(self):
-        """每秒檢查一次是否有排定的限時搶錢活動需要開始"""
-        now_timestamp = int(datetime.datetime.now().timestamp())
-        # 使用複製的列表進行迭代，避免在迴圈中修改列表
-        for event_time in self.check_in_times[:]:
-            if now_timestamp == event_time:
-                channel = self.bot.get_channel(config.REWARD_CHANNEL_ID)
-                if channel:
-                    # 使用 create_task 以免阻塞 loop
-                    self.bot.loop.create_task(self.run_check_in_event(channel))
-                self.check_in_times.remove(event_time)
+    @tasks.loop(hours=1)
+    async def random_red_packet_loop(self):
+        """每小時檢查一次，有機率觸發隨機紅包雨"""
+        # 每小時有 20% 的機率觸發
+        if random.random() < 0.2:
+            channel = self.bot.get_channel(config.REWARD_CHANNEL_ID)
+            if channel:
+                # 隨機決定這次紅包可以被搶的人數
+                limit = random.randint(10, 25)
+                await self.run_check_in_event(channel, limit)
 
-    @schedule_check_in.before_loop
-    async def before_schedule_check_in(self):
-        """在 loop 開始前，先等待 bot 上線，並排定所有搶錢活動時間"""
+    @random_red_packet_loop.before_loop
+    async def before_random_red_packet_loop(self):
+        """在 loop 開始前，先等待 bot 上線"""
         await self.bot.wait_until_ready()
-        self._schedule_all_check_in_events()
 
-    def _schedule_all_check_in_events(self):
-        """讀取課程時間並排定所有限時搶錢活動"""
-        try:
-            with open("data/schedule.json", "r", encoding="utf-8") as f:
-                schedule_data = json.load(f)
-            lesson_times = [
-                datetime.datetime.fromisoformat(item["time"])
-                for item in schedule_data["lessons"]
-            ]
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            print(f"無法讀取或解析 schedule.json: {e}")
-            return
+    @commands.command(name="redpacket")
+    @commands.has_permissions(administrator=True)
+    async def red_packet(self, ctx: commands.Context, limit: int = 20):
+        """手動觸發一個紅包雨/搶錢活動。
 
-        # Day 1
-        if len(lesson_times) > 5:
-            self._schedule_random_time_for_day(
-                [lesson_times[2], lesson_times[3]], [lesson_times[4], lesson_times[5]]
-            )
+        Args:
+            limit (int, optional): 可以搶紅包的人數上限. Defaults to 20.
+        """
+        await self.run_check_in_event(ctx.channel, limit)
 
-        # Day 2
-        if len(lesson_times) > 12:
-            self._schedule_random_time_for_day(
-                [lesson_times[8], lesson_times[9]], [lesson_times[11], lesson_times[12]]
-            )
-
-        # Day 3
-        if len(lesson_times) > 19:
-            self._schedule_random_time_for_day(
-                [lesson_times[15], lesson_times[16]],
-                [lesson_times[18], lesson_times[19]],
-            )
-
-        # Day 4
-        if len(lesson_times) > 21:
-            self._schedule_random_time_for_day([lesson_times[20], lesson_times[21]])
-
-        print(f"已排定 {len(self.check_in_times)} 個限時搶錢活動。")
-        print(f"活動時間戳: {self.check_in_times}")
-
-    def _schedule_random_time_for_day(self, interval1, interval2=None):
-        """在給定的1個或2個時間區間中，隨機選擇1個來排程活動"""
-        chosen_interval = interval1
-        if interval2 and random.choice([True, False]):
-            chosen_interval = interval2
-
-        start_time, end_time = chosen_interval
-        random_timestamp = random.randint(
-            int(start_time.timestamp()), int(end_time.timestamp()) - 1
-        )
-        self.check_in_times.append(random_timestamp)
-
-    async def run_check_in_event(self, channel: discord.TextChannel):
+    async def run_check_in_event(self, channel: discord.TextChannel, limit_amount: int):
         """執行限時搶錢活動"""
-        limit_amount = 20
-        message = await channel.send("限時獎金開搶！")
-
-        thread = await message.create_thread(
-            name="限時獎金討論串", auto_archive_duration=60
-        )
-        info_msg = await thread.send(
-            f"點擊下方按鈕搶獎金！還剩 `{limit_amount}` 位名額"
-        )
-
         view = self.CheckInView(self, limit=limit_amount)
-        view.message = info_msg
-        await info_msg.edit(view=view)
-        await view.wait()
-
-        # 活動結束後刪除討論串
-        await thread.delete()
+        message = await channel.send(
+            f"點擊下方按鈕搶獎金！還剩 `{limit_amount}` 位名額", view=view
+        )
+        view.message = message
 
     class CheckInView(discord.ui.View):
         def __init__(self, cog_instance, limit: int):
@@ -128,33 +70,39 @@ class Tasks(commands.Cog):
                 )
                 return
 
+            if self.remain_amount <= 0:
+                await interaction.response.send_message(
+                    "獎金已經被搶完了！", ephemeral=True
+                )
+                return
+
+            self.remain_amount -= 1
+            self.claimed_users.add(user.id)
+
+            # 發放獎金，並傳入 user 物件以更新使用者名稱
+            user_account = await user_data_manager.get_user(user)
+            reward = random.randint(100, 200)
+            user_account["money"] += reward
+            await user_data_manager.update_user_data(user.id, user_account)
+
+            await interaction.response.send_message(
+                f"恭喜你搶到 {reward} 元獎金！", ephemeral=True
+            )
+
             if self.remain_amount > 0:
-                self.remain_amount -= 1
-                self.claimed_users.add(user.id)
-
-                # 發放獎金
-                user_account = self.cog.user_data.get_user(user.id)
-                reward = random.randint(100, 200)
-                user_account["money"] += reward
-                self.cog.user_data.save_data()
-
-                await interaction.message.edit(
+                await self.message.edit(
                     content=f"點擊下方按鈕搶獎金！還剩 `{self.remain_amount}` 位名額"
                 )
-                await interaction.response.send_message(
-                    f"恭喜你搶到 {reward} 元獎金！", ephemeral=True
-                )
-
-            if self.remain_amount <= 0:
+            else:
                 button.disabled = True
-                await interaction.message.edit(view=self)
-                await interaction.followup.send("獎金被搶完了！", ephemeral=False)
+                await self.message.edit(content="獎金被搶完了！", view=self)
                 self.stop()
 
         async def on_timeout(self):
             for item in self.children:
                 item.disabled = True
-            await self.message.edit(content="獎金時間結束！", view=self)
+            if self.message:
+                await self.message.edit(content="獎金時間結束！", view=self)
 
 
 async def setup(bot):

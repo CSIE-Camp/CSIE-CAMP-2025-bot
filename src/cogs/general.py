@@ -115,7 +115,9 @@ class General(commands.Cog):
     async def draw_quote(self, ctx: commands.Context):
         """抽籤決定今日運勢，並附上一句動漫名言。"""
         if not self.acg_quotes:
-            await ctx.send("抱歉，我找不到任何名言可以抽...看來是我的腦袋空空了。")
+            await ctx.send(
+                "抱歉，我找不到任何名言可以抽...看來是我的腦袋空空了。", ephemeral=True
+            )
             return
 
         # --- 運勢計算 ---

@@ -24,11 +24,16 @@ class GameEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """監聽所有非指令訊息，為使用者增加經驗值並處理升級。"""
-        # 忽略來自機器人的訊息，以及由指令觸發的訊息
-        if message.author.bot or message.content.startswith(self.bot.command_prefix):
+        # 忽略來自機器人的訊息、由指令觸發的訊息，以及來自討論串的訊息
+        if (
+            message.author.bot
+            or message.content.startswith(self.bot.command_prefix)
+            or isinstance(message.channel, discord.Thread)
+        ):
             return
 
         user_id = message.author.id
+        user_obj = message.author
 
         # 獲取或為該使用者建立一個鎖
         if user_id not in self.user_exp_locks:
@@ -37,7 +42,7 @@ class GameEvents(commands.Cog):
 
         # 使用該使用者的專屬鎖來確保經驗值計算的原子性
         async with lock:
-            user = await user_data_manager.get_user(user_id)
+            user = await user_data_manager.get_user(user_id, user_obj)
             original_level = user.get("lv", 1)
 
             # --- 經驗值與金錢獎勵 ---
@@ -46,6 +51,32 @@ class GameEvents(commands.Cog):
             money_gain = random.randint(1, 2)
             user["exp"] += exp_gain
             user["money"] += money_gain
+
+            # --- 隨機事件 ---
+            # 有 5% 的機率觸發一個隨機事件
+            if random.random() < 0.05:  # 5% 機率
+                event_type = random.choice(["money_gain", "money_loss"])
+
+                if event_type == "money_gain":
+                    found_money = random.randint(5, 20)
+                    user["money"] += found_money
+                    event_embed = discord.Embed(
+                        title="✨ 好運降臨！",
+                        description=f"{message.author.mention} 在路上撿到了 **{found_money}** 元！",
+                        color=discord.Color.gold(),
+                    )
+                    await message.channel.send(embed=event_embed)
+
+                elif event_type == "money_loss":
+                    lost_money = random.randint(5, 20)
+                    # 確保錢不會變負數
+                    user["money"] = max(0, user["money"] - lost_money)
+                    event_embed = discord.Embed(
+                        title="💸 壞事發生了...",
+                        description=f"{message.author.mention} 不小心弄丟了 **{lost_money}** 元...",
+                        color=discord.Color.dark_grey(),
+                    )
+                    await message.channel.send(embed=event_embed)
 
             # --- 升級檢查 ---
             # 使用 while 迴圈處理一次獲得大量經驗值時可能發生的連續升級

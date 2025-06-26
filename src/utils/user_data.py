@@ -12,6 +12,7 @@
 import json
 import asyncio
 from typing import Dict, Any, Optional
+import discord
 
 from src import config
 
@@ -44,7 +45,20 @@ class UserData:
             print("正在初始化使用者資料...")
             try:
                 with open(self.file_path, "r", encoding="utf-8") as f:
-                    self.users = json.load(f)
+                    all_users = json.load(f)
+
+                # 清理無效的鍵（非數字 ID）
+                cleaned_users = {k: v for k, v in all_users.items() if k.isdigit()}
+
+                if len(cleaned_users) < len(all_users):
+                    print(
+                        f"已清理無效的使用者資料。從 {len(all_users)} 筆資料中保留了 {len(cleaned_users)} 筆。"
+                    )
+                    self.users = cleaned_users
+                    await self._save_data()  # 儲存清理後的版本
+                else:
+                    self.users = all_users
+
                 print(
                     f"已成功從 '{self.file_path}' 載入 {len(self.users)} 位使用者的資料。"
                 )
@@ -67,42 +81,75 @@ class UserData:
         except IOError as e:
             print(f"儲存資料到 '{self.file_path}' 時發生錯誤: {e}")
 
-    async def get_user(self, user_id: int) -> UserRecord:
+    async def get_user(
+        self,
+        user_id_or_obj: int | discord.User | discord.Member,
+        user_obj_optional: Optional[discord.User | discord.Member] = None,
+    ) -> UserRecord:
         """
         從記憶體中獲取使用者資料。
+        可以傳入使用者 ID (int) 或 discord.User/discord.Member 物件。
         如果使用者是第一次出現，會為其建立一個預設的資料結構並儲存。
+        同時會檢查並更新使用者名稱。
         """
+        user_obj: Optional[discord.User | discord.Member] = None
+        user_id: int
+
+        if isinstance(user_id_or_obj, (discord.User, discord.Member)):
+            user_obj = user_id_or_obj
+            user_id = user_obj.id
+        else:
+            user_id = user_id_or_obj
+            user_obj = user_obj_optional
+
         user_id_str = str(user_id)
 
-        if user_id_str in self.users:
-            user_data = self.users[user_id_str]
-            # 確保舊用戶也有成就欄位（向後相容性）
-            if "achievements" not in user_data:
-                user_data["achievements"] = []
-                await self.update_user_data(user_id, user_data)
-            return user_data
-
-        async with self._lock:
-            if user_id_str in self.users:
-                user_data = self.users[user_id_str]
-                if "achievements" not in user_data:
-                    user_data["achievements"] = []
+        # 如果是新使用者，先建立基本資料
+        if user_id_str not in self.users:
+            async with self._lock:
+                # 再次檢查，防止競爭條件
+                if user_id_str not in self.users:
+                    print(f"新使用者: {user_id_str}，正在建立預設資料...")
+                    user_name = user_obj.name if user_obj else "Unknown"
+                    default_data = {
+                        "name": user_name,
+                        "lv": 1,
+                        "exp": 0,
+                        "money": 100,
+                        "last_sign_in": None,
+                        "sign_in_streak": 0,
+                        "achievements": [],
+                        "found_flags": [],
+                    }
+                    self.users[user_id_str] = default_data
                     await self._save_data()
-                return user_data
 
-            print(f"新使用者: {user_id_str}，正在建立預設資料...")
-            default_data = {
-                "lv": 1,
-                "exp": 0,
-                "money": 100,
-                "last_sign_in": None,
-                "sign_in_streak": 0,
-                "achievements": [],
-                "found_flags": [],
-            }
-            self.users[user_id_str] = default_data
-            await self._save_data()
-            return default_data
+        # 現在，使用者資料必定存在
+        user_data = self.users[user_id_str]
+
+        # --- 向後相容性與名稱更新檢查 ---
+        needs_update = False
+
+        # 如果提供了使用者物件，就檢查並更新名稱
+        # 這也會處理使用者改名，或補上舊資料中缺少的名字
+        if user_obj and user_data.get("name") != user_obj.name:
+            user_data["name"] = user_obj.name
+            needs_update = True
+
+        # 確保舊用戶也有成就和旗標欄位
+        if "achievements" not in user_data:
+            user_data["achievements"] = []
+            needs_update = True
+
+        if "found_flags" not in user_data:
+            user_data["found_flags"] = []
+            needs_update = True
+
+        # 如果有任何更新，則儲存回檔案
+        if needs_update:
+            await self.update_user_data(user_id, user_data)
+
+        return user_data
 
     async def update_user_data(self, user_id: int, data: UserRecord):
         """
@@ -124,7 +171,10 @@ class UserData:
         Returns:
             list: 排序後的使用者元組列表 (user_id, data)。
         """
-        if sort_by in ["achievements", "found_flags"]:
+        if sort_by == "exp":
+            # 對於經驗值，主要按等級排序，次要按經驗值排序
+            key_func = lambda item: (item[1].get("lv", 1), item[1].get("exp", 0))
+        elif sort_by in ["achievements", "found_flags"]:
             # 對於列表類型，我們按其長度排序
             key_func = lambda item: len(item[1].get(sort_by, []))
         else:

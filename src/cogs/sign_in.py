@@ -33,7 +33,10 @@ class SignIn(commands.Cog):
         last_sign_in_str = user.get("last_sign_in")
 
         if last_sign_in_str == today.isoformat():
-            await ctx.send(f"👋 {ctx.author.mention} 你今天已經簽到過了！明天再來吧。")
+            await ctx.send(
+                f"👋 {ctx.author.mention} 你今天已經簽到過了！明天再來吧。",
+                ephemeral=True,
+            )
             return
 
         # --- 計算連續簽到 ---
@@ -63,8 +66,10 @@ class SignIn(commands.Cog):
         # --- 檢查成就 ---
         # 檢查連續簽到成就
         if new_streak >= 7:
-            await achievement_manager.check_and_award_achievement(user_id, "lucky_streak", ctx)
-        
+            await achievement_manager.check_and_award_achievement(
+                user_id, "lucky_streak", ctx
+            )
+
         # 檢查金錢成就
         await achievement_manager.check_money_achievements(user_id, user["money"], ctx)
 

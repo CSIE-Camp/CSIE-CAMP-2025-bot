@@ -95,13 +95,11 @@ class AchievementManager:
 
         # 如果有context，發送成就獲得訊息
         if ctx:
+            user_obj = await ctx.bot.fetch_user(user_id)
             embed = discord.Embed(
                 title="🎉 恭喜獲得成就！",
-                description=f"**{achievement.icon} {achievement.name}**\n{achievement.description}",
-                color=0xFFD700,
-            )
-            embed.set_footer(
-                text=f"成就獲得時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                description=f"{user_obj.mention} 達成了 **{achievement.icon} {achievement.name}**\n{achievement.description}",
+                color=discord.Color.gold(),
             )
             await ctx.send(embed=embed)
 
