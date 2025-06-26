@@ -156,6 +156,15 @@ class UserDataManager:
             self.users[user_id_str] = data
             await self._save_data()
 
+    async def reset_all_flags(self) -> None:
+        """重置所有用戶的 'found_flags'"""
+        async with self._lock:
+            for user_id in self.users:
+                if "found_flags" in self.users[user_id]:
+                    self.users[user_id]["found_flags"] = []
+            await self._save_data()
+            print("🚩 已重置所有用戶的彩蛋旗標")
+
     def get_top_users(
         self, sort_by: str, limit: int = 10
     ) -> List[Tuple[str, UserRecord]]:

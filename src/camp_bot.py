@@ -34,6 +34,25 @@ class CampBot:
         # 綁定事件處理器
         self.bot.event(self.on_ready)
 
+        # 新增同步指令
+        @self.bot.command()
+        @commands.is_owner()
+        async def sync(ctx: commands.Context):
+            """手動同步斜線指令"""
+            await ctx.send("🔄 正在同步斜線指令...")
+            try:
+                if config.DEV_GUILD_ID:
+                    guild = discord.Object(id=config.DEV_GUILD_ID)
+                    synced = await self.bot.tree.sync(guild=guild)
+                    await ctx.send(
+                        f"✅ 成功在開發者伺服器同步 {len(synced)} 個斜線指令！"
+                    )
+                else:
+                    synced = await self.bot.tree.sync()
+                    await ctx.send(f"✅ 成功全域同步 {len(synced)} 個斜線指令！")
+            except Exception as e:
+                await ctx.send(f"❌ 同步失敗：{e}")
+
     async def on_ready(self):
         """機器人啟動完成事件"""
         print(f"✅ 機器人已成功登入：{self.bot.user}")
@@ -43,6 +62,12 @@ class CampBot:
         activity = discord.Game(name="參加師大資工營中！")
         await self.bot.change_presence(status=discord.Status.online, activity=activity)
         print("🎮 機器人狀態已設定完成")
+
+        # 自動同步斜線指令
+        if config.DEV_GUILD_ID:
+            guild = discord.Object(id=config.DEV_GUILD_ID)
+            await self.bot.tree.sync(guild=guild)
+
         print("=" * 50)
 
     async def load_cogs(self):

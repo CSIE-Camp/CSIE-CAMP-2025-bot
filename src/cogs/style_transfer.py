@@ -114,7 +114,9 @@ class StyleTransfer(commands.Cog):
 
         except Exception as e:
             print(f"❌ 風格轉換失敗：{e}")
-            await self._send_error_message(style_config)
+            await self._send_error_message(
+                "抱歉，處理你的訊息時出了點問題，請稍後再試～", style_config
+            )
 
     async def _send_style_transfer_message(
         self, original_content: str, style_config: Dict[str, Any], prompt: str
@@ -123,6 +125,10 @@ class StyleTransfer(commands.Cog):
         # 生成 AI 回應
         full_prompt = f"{prompt}\n\n用戶輸入：\n```{original_content}```"
         response = await self.model.generate_content_async(full_prompt)
+
+        if not response.text or response.text.strip() == "":
+            await self._send_error_message("🤔 我不知道該說什麼...", style_config)
+            return
 
         # 準備 Webhook 訊息
         payload = {
@@ -137,10 +143,12 @@ class StyleTransfer(commands.Cog):
                 if not resp.ok:
                     raise Exception(f"Webhook 請求失敗：{resp.status}")
 
-    async def _send_error_message(self, style_config: Dict[str, Any]) -> None:
+    async def _send_error_message(
+        self, error_content: str, style_config: Dict[str, Any]
+    ) -> None:
         """發送錯誤訊息"""
         error_payload = {
-            "content": "😅 抱歉，處理你的訊息時出了點問題，請稍後再試～",
+            "content": error_content,
             "username": style_config["username"],
             "avatar_url": style_config["avatar_url"],
         }

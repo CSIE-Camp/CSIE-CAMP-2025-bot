@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import json
 import datetime
@@ -90,29 +91,43 @@ class EasterEgg(commands.Cog):
                     delete_after=5,
                 )
 
-    @commands.command(name="egg", aliases=["彩蛋"], help="查詢自己找到的彩蛋。")
-    async def my_egg(self, ctx):
+    @app_commands.command(name="egg", description="查詢自己找到的彩蛋。")
+    async def my_egg(self, interaction: discord.Interaction):
         """讓使用者查詢自己找到的彩蛋列表"""
-        user = await self.user_data.get_user(ctx.author.id)
+        user = await self.user_data.get_user(interaction.user.id)
         found_flags_ids = user.get("found_flags", [])
 
         if not found_flags_ids:
-            return await ctx.send(f"{ctx.author.mention} 你還沒有找到任何彩蛋喔！")
-
-        # 為了方便查找，建立一個從 flag ID 到 flag 名稱的對應字典
-        id_to_name = {info["id"]: info["name"] for info in self.flags_data.values()}
-
-        found_flags_names = [
-            id_to_name.get(flag_id, f"未知彩蛋 (ID: {flag_id})")
-            for flag_id in found_flags_ids
-        ]
+            await interaction.response.send_message(
+                f"{interaction.user.mention} 你還沒有找到任何彩蛋喔！"
+            )
+            return
 
         embed = discord.Embed(
-            title=f"**{ctx.author.display_name}** 找到的彩蛋",
-            color=Colors.WARNING,
+            title=f"🥚 {interaction.user.display_name} 的彩蛋收藏",
+            color=Colors.INFO,
         )
-        embed.description = "\n".join(f"✅ {name}" for name in found_flags_names)
-        await ctx.send(embed=embed)
+
+        all_flags_map = {v["id"]: v for k, v in self.flags_data.items()}
+
+        found_flags_info = [
+            all_flags_map[flag_id]
+            for flag_id in found_flags_ids
+            if flag_id in all_flags_map
+        ]
+
+        if found_flags_info:
+            egg_list = ""
+            for flag in found_flags_info:
+                egg_list += f"- **{flag['name']}**\n"
+            embed.description = egg_list
+        else:
+            embed.description = "你還沒有找到任何彩蛋喔！"
+
+        embed.set_footer(
+            text=f"已找到 {len(found_flags_ids)} / {len(self.flags_data)} 個彩蛋"
+        )
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot):

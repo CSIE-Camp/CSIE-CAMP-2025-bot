@@ -48,12 +48,17 @@ DEFAULT_USER_FIELDS: Dict[str, any] = {
 
 # ===== 檔案路徑 =====
 DATA_DIR = "data"
+BOT_STATE_FILE = f"{DATA_DIR}/bot_state.json"
 ACG_QUOTES_FILE = f"{DATA_DIR}/acg_quotes.json"
 USER_DATA_FILE = f"{DATA_DIR}/user_data.json"
 ACHIEVEMENTS_FILE = f"{DATA_DIR}/achievement.json"
 FLAGS_FILE = f"{DATA_DIR}/flags.json"
 MYGO_FILE = f"{DATA_DIR}/mygo.json"
 SCHEDULE_FILE = f"{DATA_DIR}/schedule.json"
+
+
+# ===== 排行榜設定 =====
+SCOREBOARD_UPDATE_INTERVAL = 5  # minutes
 
 
 # ===== Discord 嵌入顏色 =====

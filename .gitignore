@@ -68,6 +68,7 @@ venv.bak/
 # 用戶資料（機敏資料）
 user_data.json
 data/user_data.json
+data/bot_state.json
 
 # 臨時檔案
 *.tmp

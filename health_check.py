@@ -44,6 +44,8 @@ def check_python_version() -> bool:
 
 def check_dependencies() -> bool:
     """檢查依賴套件"""
+    import importlib
+
     required_packages = [
         "discord",
         "aiohttp",
@@ -57,13 +59,8 @@ def check_dependencies() -> bool:
 
     for package in required_packages:
         try:
-            if package == "google.genai":
-                import google.genai  # noqa: F401
-
-                print_status(f"套件: {package}", "已安裝")
-            else:
-                __import__(package)
-                print_status(f"套件: {package}", "已安裝")
+            importlib.import_module(package)
+            print_status(f"套件: {package}", "已安裝")
         except ImportError:
             print_status(f"套件: {package}", "未安裝", Colors.RED)
             all_installed = False
@@ -211,8 +208,8 @@ def check_cogs() -> bool:
                 print_status(
                     f"  Cog: {cog_file.stem}", "缺少 setup 函數", Colors.YELLOW
                 )
-        except Exception:
-            print_status(f"  Cog: {cog_file.stem}", "載入錯誤", Colors.RED)
+        except Exception as e:
+            print_status(f"  Cog: {cog_file.stem}", f"載入錯誤: {e}", Colors.RED)
 
     return len(cog_files) > 0
 

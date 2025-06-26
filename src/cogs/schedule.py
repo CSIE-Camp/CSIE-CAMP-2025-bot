@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import json
 import datetime
@@ -86,20 +87,23 @@ class Schedule(commands.Cog):
             return random.choice(additional_messages)
         return None
 
-    @commands.command(
-        name="schedule",
-        aliases=["查詢課表"],
-        help="查詢目前課程、剩餘時間、下個課程。可選填 mmddHHMM 格式的自訂時間。",
+    @app_commands.command(
+        name="schedule", description="查詢目前課程、剩餘時間、下個課程。"
     )
-    async def query_schedule(self, ctx, custom_time: str = None):
+    @app_commands.describe(custom_time="要查詢的自訂時間(格式: mmddHHMM)")
+    async def query_schedule(
+        self, interaction: discord.Interaction, custom_time: str = None
+    ):
         """查詢目前課程、剩餘時間、下個課程。可選填 mmddHHMM 格式的自訂時間。"""
         now = datetime.datetime.now()
         if custom_time:
             try:
                 now = datetime.datetime.strptime(custom_time, "%m%d%H%M")
-                now = now.replace(year=2025)  # 假設課程在 2025 年
+                now = now.replace(year=datetime.datetime.now().year)  # Use current year
             except ValueError:
-                await ctx.send("請輸入正確的時間格式：`mmddHHMM`")
+                await interaction.response.send_message(
+                    "請輸入正確的時間格式：`mmddHHMM`", ephemeral=True
+                )
                 return
 
         current_lesson = None
@@ -121,7 +125,7 @@ class Schedule(commands.Cog):
         if current_lesson:
             embed = discord.Embed(title="課表查詢", color=0x00FF00)
             embed.add_field(name="目前課程", value=current_lesson["name"], inline=False)
-            embed.set_footer(text=f"查詢時間：{now.strftime('%Y-%m-%d %H:%M:%S')}")
+            embed.set_footer(text="NTNU CSIE Camp 2025")
 
             if next_lesson:
                 remaining_time = next_lesson["time"] - now
@@ -148,9 +152,20 @@ class Schedule(commands.Cog):
                 title="課表查詢", description="營隊還沒開始喔！", color=0xFF0000
             )
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
         if fancy_reply:
-            await ctx.send(fancy_reply)
+            await interaction.followup.send(fancy_reply)
+
+    @app_commands.command(
+        name="查詢課表",
+        description="查詢目前課程、剩餘時間、下個課程。(schedule的別名)",
+    )
+    @app_commands.describe(custom_time="要查詢的自訂時間(格式: mmddHHMM)")
+    async def query_schedule_alias(
+        self, interaction: discord.Interaction, custom_time: str = None
+    ):
+        """schedule 指令的別名"""
+        await self.query_schedule(interaction, custom_time)
 
 
 async def setup(bot):

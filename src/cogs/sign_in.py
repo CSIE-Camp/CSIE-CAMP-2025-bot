@@ -3,6 +3,7 @@
 """
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 import datetime
 import random
@@ -19,13 +20,15 @@ class SignIn(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.command(name="sign_in", aliases=["簽到"])
-    async def sign_in(self, ctx: commands.Context):
+    @app_commands.command(
+        name="sign_in", description="每日簽到以領取獎勵。連續簽到可以獲得額外獎勵！"
+    )
+    async def sign_in(self, interaction: discord.Interaction):
         """
         每日簽到以領取獎勵。
         連續簽到可以獲得額外獎勵！
         """
-        user_id = ctx.author.id
+        user_id = interaction.user.id
         today = datetime.date.today()
 
         # 使用異步方法從共享的 manager 獲取使用者資料
@@ -34,8 +37,8 @@ class SignIn(commands.Cog):
         last_sign_in_str = user.get("last_sign_in")
 
         if last_sign_in_str == today.isoformat():
-            await ctx.send(
-                f"👋 {ctx.author.mention} 你今天已經簽到過了！明天再來吧。",
+            await interaction.response.send_message(
+                f"👋 {interaction.user.mention} 你今天已經簽到過了！明天再來吧。",
                 ephemeral=True,
             )
             return
@@ -68,16 +71,18 @@ class SignIn(commands.Cog):
         # 檢查連續簽到成就
         if new_streak >= 7:
             await achievement_manager.check_and_award_achievement(
-                user_id, "lucky_streak", ctx
+                user_id, "lucky_streak", interaction
             )
 
         # 檢查金錢成就
-        await achievement_manager.check_money_achievements(user_id, user["money"], ctx)
+        await achievement_manager.check_money_achievements(
+            user_id, user["money"], interaction
+        )
 
         # --- 發送美化後的回應訊息 ---
         embed = discord.Embed(
             title="簽到成功！",
-            description=f"🎉 {ctx.author.mention} 你好！",
+            description=f"🎉 {interaction.user.mention} 你好！",
             color=Colors.WARNING,
         )
         embed.add_field(name="基本獎勵", value=f"💰 {base_reward}", inline=True)
@@ -85,7 +90,7 @@ class SignIn(commands.Cog):
         embed.add_field(name="額外獎勵", value=f"💰 {streak_bonus}", inline=True)
         embed.set_footer(text=f"總共獲得 {total_reward} 籌碼！")
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot: commands.Bot):

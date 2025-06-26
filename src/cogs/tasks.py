@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
 import random
 
@@ -31,15 +32,16 @@ class Tasks(commands.Cog):
         """在 loop 開始前，先等待 bot 上線"""
         await self.bot.wait_until_ready()
 
-    @commands.command(name="redpacket")
-    @commands.has_permissions(administrator=True)
-    async def red_packet(self, ctx: commands.Context, limit: int = 20):
-        """手動觸發一個紅包雨/搶錢活動。
-
-        Args:
-            limit (int, optional): 可以搶紅包的人數上限. Defaults to 20.
-        """
-        await self.run_check_in_event(ctx.channel, limit)
+    @app_commands.command(name="redpacket", description="手動觸發一個紅包雨/搶錢活動。")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.describe(limit="可以搶紅包的人數上限")
+    async def red_packet(self, interaction: discord.Interaction, limit: int = 20):
+        """手動觸發一個紅包雨/搶錢活動。"""
+        await self.run_check_in_event(interaction.channel, limit)
+        await interaction.response.send_message(
+            f"已在 {interaction.channel.mention} 發起一個 {limit} 人名額的紅包雨！",
+            ephemeral=True,
+        )
 
     async def run_check_in_event(self, channel: discord.TextChannel, limit_amount: int):
         """執行限時搶錢活動"""
