@@ -1,4 +1,8 @@
 {
+    "flag{||why_u_like_to_look_around_in_trash_can??!!||}": {
+        "id": 0,
+        "name": "拾荒老人"
+    },
     "flag{||1234567890||}": {
         "id": 1,
         "name": "上行彩蛋"
