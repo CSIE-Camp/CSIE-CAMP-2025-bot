@@ -17,7 +17,7 @@ from typing import Optional, List
 import datetime
 from io import BytesIO
 
-from src.utils.image_gen import generate_bytesIO
+from src.utils.image_gen import generate_image
 from src.utils.user_data import user_data_manager
 from src.constants import (
     DEFAULT_LEVEL,
@@ -137,14 +137,41 @@ class General(commands.Cog):
             return
 
         fortune, color, quote = self._get_random_fortune()
-        image_bytes = await self._generate_fortune_image(quote)
 
+        # 建立運勢嵌入訊息
+        embed = discord.Embed(
+            title="🔮 今日運勢", description=f"**{fortune}**", color=color
+        )
+        embed.add_field(name="💭 今日語錄", value=f"*{quote}*", inline=False)
+        embed.set_footer(text=f"為 {interaction.user.display_name} 抽取")
+
+        # 先更新用戶資料，避免因圖片生成失敗而沒有記錄今日抽籤
         user_data["last_draw_date"] = today_str
         await user_data_manager.update_user_data(interaction.user.id, user_data)
 
-        await interaction.followup.send(
-            file=discord.File(image_bytes, filename="fortune.png")
-        )
+        # 嘗試生成圖片（添加超時保護）
+        print(f"正在生成運勢圖片，引用語錄: {quote}")
+        image_bytes = None
+        try:
+            # 添加超時限制，避免卡住太久
+            import asyncio
+
+            image_bytes = await asyncio.wait_for(
+                self._generate_fortune_image(quote), timeout=30.0
+            )
+        except asyncio.TimeoutError:
+            print("⏰ 圖片生成超時，將只顯示文字版本")
+        except (ConnectionError, ValueError, ImportError) as e:
+            print(f"❌ 圖片生成失敗: {e}")
+
+        # 根據圖片生成結果決定回傳方式
+        if image_bytes:
+            await interaction.followup.send(
+                embed=embed, file=discord.File(image_bytes, filename="fortune.png")
+            )
+        else:
+            # 圖片生成失敗時，只顯示文字 embed
+            await interaction.followup.send(embed=embed)
 
     def _get_random_fortune(self) -> tuple[str, int, str]:
         """隨機取得運勢和名言"""
@@ -152,11 +179,16 @@ class General(commands.Cog):
         quote = random.choice(self.quotes) if self.quotes else "今天也要元氣滿滿喔！"
         return fortune, color, quote
 
-    async def _generate_fortune_image(self, quote: str) -> BytesIO:
+    async def _generate_fortune_image(self, quote: str) -> BytesIO | None:
         """生成運勢圖片"""
-        # 這裡的實作依賴 image_gen.py
-        # 假設它會處理所有繪圖邏輯
-        return await generate_bytesIO(quote)
+        # 如果沒有配置 HUGGINGFACE_TOKEN，則跳過圖片生成
+        from src import config
+
+        if not config.HUGGINGFACE_TOKEN:
+            print("⚠️  未配置 HUGGINGFACE_TOKEN，跳過圖片生成")
+            return None
+
+        return await generate_image(quote)
 
     @app_commands.command(name="links", description="顯示營隊相關連結")
     async def links(self, interaction: discord.Interaction):

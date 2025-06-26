@@ -23,7 +23,8 @@ ADMIN_ROLE_ID = get_int_env("ADMIN_ROLE_ID")
 # ===== API Keys =====
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-NGROK_URL = os.getenv("NGROK_URL")
+HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
+HUGGINGFACE_IMAGE_GEN_MODEL = os.getenv("HUGGINGFACE_IMAGE_GEN_MODEL")
 
 # ===== 檔案路徑 =====
 COGS_DIR = "src/cogs"
