@@ -111,7 +111,7 @@ class General(commands.Cog):
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await ctx.send(embed=embed)
 
-    @commands.command(name="draw", attrs=["抽籤"])
+    @commands.command(name="draw", aliases=["抽籤"])
     async def draw_quote(self, ctx: commands.Context):
         """抽籤決定今日運勢，並附上一句動漫名言。"""
         if not self.acg_quotes:
@@ -182,6 +182,7 @@ class General(commands.Cog):
 - **`?links`**: 顯示營隊相關的實用連結。
 - **`?draw` / `?抽籤`**: 每日抽籤，獲得運勢與動漫語錄。
 - **`?schedule` / `?查詢課表`**: 查詢營隊課程表。
+
             """,
             inline=False,
         )
@@ -193,6 +194,7 @@ class General(commands.Cog):
 - **`?slot <金額>` / `?拉霸 <金額>`**: 玩拉霸機試試手氣。
 - **聊天升級**: 在伺服器中聊天即可獲得經驗值。
 - **定時金錢活動**: 特定時間會出現特殊活動，把握機會賺錢！
+
             """,
             inline=False,
         )
@@ -202,6 +204,7 @@ class General(commands.Cog):
             value="""
 - **`?egg` / `?彩蛋`**: 查看你已經收集到的彩蛋。
 - **觸發彩蛋**: 在伺服器中輸入隱藏的關鍵字來尋找彩蛋！
+
             """,
             inline=False,
         )
@@ -212,6 +215,7 @@ class General(commands.Cog):
 - **AI 聊天**: 在任何頻道 `@機器人` 即可與 AI 自由對話。
 - **MyGo 專屬頻道**: 輸入關鍵字，自動搜尋 MyGo 角色圖片或生成 AI 台詞。
 - **風格轉換頻道**: 在特定頻道發言，訊息會被轉換成文言文、貓娘、中二或傲嬌風格。
+
             """,
             inline=False,
         )
@@ -221,6 +225,7 @@ class General(commands.Cog):
             value="""
 - **`?reload <cog>`**: 重新載入功能模組 (僅限 Bot 擁有者)。
 - **`?reset_flags`**: 重設所有人的彩蛋狀態 (僅限管理員)。
+
             """,
             inline=False,
         )
