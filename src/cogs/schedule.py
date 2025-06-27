@@ -156,17 +156,6 @@ class Schedule(commands.Cog):
         if fancy_reply:
             await interaction.followup.send(fancy_reply)
 
-    @app_commands.command(
-        name="查詢課表",
-        description="查詢目前課程、剩餘時間、下個課程。(schedule的別名)",
-    )
-    @app_commands.describe(custom_time="要查詢的自訂時間(格式: mmddHHMM)")
-    async def query_schedule_alias(
-        self, interaction: discord.Interaction, custom_time: str = None
-    ):
-        """schedule 指令的別名"""
-        await self.query_schedule(interaction, custom_time)
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Schedule(bot))

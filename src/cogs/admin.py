@@ -40,7 +40,7 @@ class Admin(commands.Cog):
         self.bot = bot
         self.user_data = user_data_manager
 
-    @app_commands.command(name="reload", description="重載指定的功能模組")
+    @app_commands.command(name="reload", description="[管理員] 重載指定的功能模組")
     @app_commands.describe(cog_name="要重載的模組名稱")
     @app_commands.check(check_admin_permissions)
     async def reload_cog(self, interaction: discord.Interaction, cog_name: str):
@@ -96,7 +96,7 @@ class Admin(commands.Cog):
         )
         await interaction.followup.send(embed=embed)
 
-    @app_commands.command(name="status", description="顯示機器人運行狀態")
+    @app_commands.command(name="status", description="[管理員] 顯示機器人運行狀態")
     @app_commands.check(check_admin_permissions)
     async def status(self, interaction: discord.Interaction):
         """顯示機器人運行狀態"""
@@ -129,7 +129,7 @@ class Admin(commands.Cog):
 
     @app_commands.command(
         name="reset_flags",
-        description="重置所有用戶的彩蛋觸發狀態",
+        description="[管理員] 重置所有用戶的彩蛋觸發狀態",
     )
     @app_commands.check(check_admin_permissions)
     async def reset_flags(self, interaction: discord.Interaction):
@@ -142,6 +142,122 @@ class Admin(commands.Cog):
             color=Colors.SUCCESS,
         )
         await interaction.followup.send(embed=embed)
+
+    @app_commands.command(
+        name="reset_daily_data",
+        description="[管理員] 重置所有用戶的每日簽到數據",
+    )
+    @app_commands.check(check_admin_permissions)
+    async def reset_daily_data(self, interaction: discord.Interaction):
+        """重置所有用戶的每日簽到數據"""
+        await interaction.response.defer(thinking=True)
+        count = 0
+        for user_data in self.user_data.users.values():
+            if user_data.get("last_sign_in"):
+                user_data["last_sign_in"] = None
+                count += 1
+        # 直接保存所有更改
+        await self.user_data.update_user_data(0, {})  # 觸發保存
+        await interaction.followup.send(
+            f"✅ 已重置 {count} 位用戶的每日簽到數據！所有用戶現在都可以重新簽到。",
+            ephemeral=True,
+        )
+
+    @app_commands.command(
+        name="announce_features",
+        description="[管理員] 公告：公開功能介紹並 @everyone（管理員專用）",
+    )
+    @app_commands.check(check_admin_permissions)
+    async def announce_features(self, interaction: discord.Interaction):
+        """公告：公開功能介紹並 @everyone（管理員專用）"""
+        await interaction.response.defer(ephemeral=True)
+
+        # 取得所有伺服器
+        guilds = self.bot.guilds
+
+        # 對每個伺服器進行公告
+        for guild in guilds:
+            try:
+                # 取得預設頻道
+                channel = guild.system_channel
+
+                if channel is not None:
+                    # 發送公告訊息
+                    await channel.send(
+                        f"@everyone 我是你們的管理員機器人！以下是我的功能介紹：\n"
+                        f"- **重載模組**：管理員可以使用 `/reload` 指令重載指定的功能模組。\n"
+                        f"- **顯示狀態**：使用 `/status` 指令查看機器人當前狀態。\n"
+                        f"- **重置彩蛋**：透過 `/reset_flags` 指令重置所有用戶的彩蛋觸發狀態。\n"
+                        f"如需更多資訊，請聯繫伺服器管理員。",
+                    )
+            except Exception as e:
+                print(f"無法在伺服器 {guild.name} 發送公告：{e}")
+
+        embed = discord.Embed(
+            title=f"{Emojis.SUCCESS} 公告發送完成",
+            description="已在所有伺服器的預設頻道發送功能介紹公告。",
+            color=Colors.SUCCESS,
+        )
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.command(
+        name="user_info", description="[管理員] 查看指定用戶的詳細資料"
+    )
+    @app_commands.describe(user="要查看的用戶")
+    @app_commands.check(check_admin_permissions)
+    async def user_info(self, interaction: discord.Interaction, user: discord.Member):
+        """查看用戶的詳細資料"""
+        user_data = await self.user_data.get_user(user.id, user)
+        embed = discord.Embed(
+            title=f"👤 用戶詳細資料 - {user.display_name}", color=Colors.INFO
+        )
+        embed.add_field(name="用戶ID", value=f"`{user.id}`", inline=True)
+        embed.add_field(name="等級", value=f"Lv.{user_data.get('lv', 1)}", inline=True)
+        embed.add_field(name="經驗值", value=f"{user_data.get('exp', 0)}", inline=True)
+        embed.add_field(
+            name="金錢", value=f"{user_data.get('money', 0)} 元", inline=True
+        )
+        embed.add_field(
+            name="債務", value=f"{user_data.get('debt', 0)} 次", inline=True
+        )
+        embed.add_field(
+            name="連續簽到",
+            value=f"{user_data.get('sign_in_streak', 0)} 天",
+            inline=True,
+        )
+        embed.add_field(
+            name="上次簽到", value=user_data.get("last_sign_in", "未簽到"), inline=True
+        )
+        embed.add_field(
+            name="成就數量",
+            value=f"{len(user_data.get('achievements', []))} 個",
+            inline=True,
+        )
+        embed.add_field(
+            name="彩蛋數量",
+            value=f"{len(user_data.get('found_flags', []))} 個",
+            inline=True,
+        )
+        embed.set_thumbnail(url=user.display_avatar.url)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="modify_money", description="[管理員] 修改用戶的金錢")
+    @app_commands.describe(user="要修改的用戶", amount="金錢數量（可為負數）")
+    @app_commands.check(check_admin_permissions)
+    async def modify_money(
+        self, interaction: discord.Interaction, user: discord.Member, amount: int
+    ):
+        """修改用戶的金錢"""
+        user_data = await self.user_data.get_user(user.id, user)
+        old_money = user_data.get("money", 0)
+        user_data["money"] = max(0, old_money + amount)  # 確保金錢不會變成負數
+        await self.user_data.update_user_data(user.id, user_data)
+        action = "增加" if amount > 0 else "減少"
+        await interaction.response.send_message(
+            f"✅ 已為 {user.mention} {action} {abs(amount)} 元！\n"
+            f"原有金錢: {old_money} 元 → 現有金錢: {user_data['money']} 元",
+            ephemeral=True,
+        )
 
 
 async def setup(bot: commands.Bot):
