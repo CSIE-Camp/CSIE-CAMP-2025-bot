@@ -90,7 +90,6 @@ def _extract_actual_result(result):
     """從可能的列表或元組中提取實際結果。"""
     if isinstance(result, (list, tuple)) and len(result) > 0:
         actual_result = result[0]
-        print(f"從列表中取得結果: {type(actual_result)}")
         return actual_result
     return result
 
@@ -118,17 +117,14 @@ def _download_from_url(url: str) -> Optional[BytesIO]:
 def _read_local_file(file_path: str) -> Optional[BytesIO]:
     """讀取本地檔案。"""
     try:
-        print(f"📁 讀取本地檔案: {file_path}")
         with open(file_path, "rb") as f:
             return BytesIO(f.read())
     except FileNotFoundError:
-        print(f"❌ 找不到檔案: {file_path}")
         return None
 
 
 def _handle_file_object(file_obj) -> BytesIO:
     """處理檔案物件。"""
-    print("📄 處理檔案物件")
     return BytesIO(file_obj.read())
 
 
