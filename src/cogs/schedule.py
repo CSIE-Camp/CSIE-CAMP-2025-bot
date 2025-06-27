@@ -9,7 +9,7 @@ from src.constants import SCHEDULE_FILE
 
 
 class Schedule(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.lessons = self.load_schedule()
 
@@ -168,5 +168,5 @@ class Schedule(commands.Cog):
         await self.query_schedule(interaction, custom_time)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(Schedule(bot))

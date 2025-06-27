@@ -9,7 +9,7 @@ from src import config
 
 
 class Tasks(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.random_red_packet_loop.start()
 
@@ -107,5 +107,5 @@ class Tasks(commands.Cog):
                 await self.message.edit(content="獎金時間結束！", view=self)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(Tasks(bot))
