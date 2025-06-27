@@ -53,7 +53,7 @@ class EasterEgg(commands.Cog):
                 await self.user_data.update_user_data(user_id, user)
 
                 announcement_channel = self.bot.get_channel(
-                    config.EASTER_EGG_CHANNEL_ID
+                    config.ANNOUNCEMENT_CHANNEL_ID
                 )
                 if announcement_channel:
                     # 將當前找到的人數 +1 作為名次

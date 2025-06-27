@@ -12,6 +12,7 @@ import asyncio
 # 導入共享的 user_data_manager 以確保資料操作的同步與一致性
 from src.utils.user_data import user_data_manager
 from src.constants import Colors
+from src import config
 
 
 class GameEvents(commands.Cog):
@@ -110,7 +111,12 @@ class GameEvents(commands.Cog):
                         else message.author.default_avatar.url
                     )
                 )
-                await message.channel.send(embed=level_up_embed)
+                # 通知到公告頻道
+                announce_channel = self.bot.get_channel(config.ANNOUNCEMENT_CHANNEL_ID)
+                if announce_channel:
+                    await announce_channel.send(embed=level_up_embed)
+                else:
+                    await message.channel.send(embed=level_up_embed)
 
             # --- 儲存資料 ---
             # 使用 update_user_data 將更新後的資料寫回檔案

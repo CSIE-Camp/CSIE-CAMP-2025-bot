@@ -21,10 +21,10 @@ class Tasks(commands.Cog):
         """每小時檢查一次，有機率觸發隨機紅包雨"""
         # 每小時有 20% 的機率觸發
         if random.random() < 0.2:
-            channel = self.bot.get_channel(config.REWARD_CHANNEL_ID)
+            channel = self.bot.get_channel(config.ANNOUNCEMENT_CHANNEL_ID)
             if channel:
                 # 隨機決定這次紅包可以被搶的人數
-                limit = random.randint(10, 25)
+                limit = random.randint(3, 10)
                 await self.run_check_in_event(channel, limit)
 
     @random_red_packet_loop.before_loop

@@ -32,15 +32,6 @@ class MyGo(commands.Cog):
         except (FileNotFoundError, json.JSONDecodeError):
             self.mygo_quotes = []
 
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        """Listen for messages in the MyGo channel."""
-        if message.author.bot:
-            return
-
-        if message.channel.id == config.MYGO_CHANNEL_ID:
-            await self.handle_mygo_search(message, message.content)
-
     @app_commands.command(name="mygo", description="從 MyGO!!!!! 圖庫中搜尋一張圖片。")
     @app_commands.describe(keyword="要搜尋的台詞或關鍵字")
     async def mygo_slash(self, interaction: discord.Interaction, keyword: str):

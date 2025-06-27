@@ -31,10 +31,8 @@ COGS_DIR = "src/cogs"
 USER_DATA_FILE = os.getenv("USER_DATA_FILE", "data/user_data.json")
 
 # ===== 主要頻道 ID =====
-MYGO_CHANNEL_ID = get_int_env("MYGO_CHANNEL_ID")
-REWARD_CHANNEL_ID = get_int_env("REWARD_CHANNEL_ID")
-EASTER_EGG_CHANNEL_ID = get_int_env("EASTER_EGG_CHANNEL_ID")
 SCOREBOARD_CHANNEL_ID = get_int_env("SCOREBOARD_CHANNEL_ID")
+ANNOUNCEMENT_CHANNEL_ID = get_int_env("ANNOUNCEMENT_CHANNEL_ID")
 
 # ===== 風格轉換頻道 ID =====
 STYLE_TRANSFER_WENYAN_CHANNEL_ID = get_int_env("STYLE_TRANSFER_WENYAN_CHANNEL_ID")
@@ -87,6 +85,13 @@ STYLE_TRANSFER_CONFIG = {
         "description": "祥子風格",
     },
 }
+
+# ===== 遊戲允許頻道設定 =====
+# 以逗號分隔多個頻道 ID，例如：123,456,789
+ALLOWED_GAME_CHANNEL_IDS = os.getenv("ALLOWED_GAME_CHANNEL_IDS", "").split(",")
+ALLOWED_GAME_CHANNEL_IDS = [
+    int(cid) for cid in ALLOWED_GAME_CHANNEL_IDS if cid.strip().isdigit()
+]  # 轉為 int 並過濾空值
 
 # ===== 除錯設定 =====
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"

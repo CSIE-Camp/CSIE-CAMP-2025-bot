@@ -48,7 +48,7 @@ class DailyCheckin(commands.Cog):
         每日簽到抽籤功能。
         用戶簽到後會自動抽取今日運勢，並根據運勢等級獲得不同的金錢獎勵。
         """
-        await interaction.response.defer(thinking=True)
+        # await interaction.response.defer(thinking=True)
 
         user_id = interaction.user.id
         today = datetime.date.today()
@@ -57,14 +57,15 @@ class DailyCheckin(commands.Cog):
         # 獲取用戶資料
         user = await user_data_manager.get_user(user_id, interaction.user)
 
-        # 檢查是否已經簽到
         last_checkin_str = user.get("last_sign_in")
         if last_checkin_str == today_str:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 f"👋 {interaction.user.mention} 你今天已經簽到過了！明天再來吧。",
                 ephemeral=True,
             )
             return
+
+        await interaction.response.defer(thinking=True)
 
         # 計算連續簽到天數
         yesterday = today - datetime.timedelta(days=1)

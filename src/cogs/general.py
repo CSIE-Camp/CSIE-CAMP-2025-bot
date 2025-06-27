@@ -24,6 +24,7 @@ from src.constants import (
     PROGRESS_BAR_EMPTY,
     Colors,
 )
+from src import config
 
 
 class General(commands.Cog):
@@ -124,65 +125,106 @@ class General(commands.Cog):
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await interaction.response.send_message(embed=embed)
 
-    @commands.hybrid_command(name="help", description="顯示所有指令的說明")
+    def _get_game_channel_mention(self):
+        # 只取第一個允許遊戲的頻道
+        if config.ALLOWED_GAME_CHANNEL_IDS:
+            cid = config.ALLOWED_GAME_CHANNEL_IDS[0]
+            return f"<#{cid}>"
+        return "指定頻道"
+
+    @commands.hybrid_command(name="help", description="顯示所有玩家可用功能與玩法說明")
     async def help(self, ctx: commands.Context):
-        """顯示幫助訊息"""
+        """顯示玩家可用功能與玩法說明（僅自己可見）"""
+        game_channel_mention = self._get_game_channel_mention()
+        # 取得頻道超連結
+        game_channel_link = game_channel_mention
+        if game_channel_mention.startswith("<#") and game_channel_mention.endswith(">"):
+            channel_id = game_channel_mention[2:-1]
+            game_channel_link = (
+                f"[遊戲頻道](https://discord.com/channels/{ctx.guild.id}/{channel_id})"
+            )
+
+        # 風格轉換頻道連結
+        style_channels = []
+        style_channel_names = [
+            ("文言文", getattr(config, "STYLE_TRANSFER_WENYAN_CHANNEL_ID", None)),
+            ("貓娘", getattr(config, "STYLE_TRANSFER_CATGIRL_CHANNEL_ID", None)),
+            ("中二", getattr(config, "STYLE_TRANSFER_CHUUNIBYOU_CHANNEL_ID", None)),
+            ("傲嬌", getattr(config, "STYLE_TRANSFER_TSUNDERE_CHANNEL_ID", None)),
+            ("祥子", getattr(config, "STYLE_TRANSFER_SAKIKO_CHANNEL_ID", None)),
+        ]
+        for name, cid in style_channel_names:
+            if cid:
+                style_channels.append(
+                    f"[{name}](https://discord.com/channels/{ctx.guild.id}/{cid})"
+                )
+        style_channels_str = "、".join(style_channels) if style_channels else "指定頻道"
+
+        bot_name = self.bot.user.display_name if self.bot.user else "機器人"
+
         embed = discord.Embed(
-            title="🤖 師大資工營 Discord Bot 指令大全",
-            description="安安！我是師大資工營的專屬機器人，這裡是我會的所有指令！\n"
-            "大部分指令都支援斜線 `/` 或前綴 `?` 來使用。\n"
-            "若想查看特定指令的詳細用法，請使用 `/help <指令名稱>`。",
+            title="🎮 師大資工營 Discord Bot 玩家功能總覽",
+            description="歡迎來到資工營！以下是你可以體驗的所有互動功能與玩法：\n\n"
+            "**所有指令皆可用 `/` 或觸發。**\n\n"
+            f"如需查詢特定指令用法，請輸入 `/help <指令名稱>`。\n\n"
+            f"遊戲請至 {game_channel_link} 頻道使用。",
             color=discord.Color.blue(),
             timestamp=datetime.datetime.now(),
         )
-
-        # 從 cogs 中動態生成指令列表
-        cogs = {
-            "🎯 一般功能": ["profile", "links", "schedule", "help"],
-            "💰 遊戲經濟": [
-                "checkin",
-                "scoreboard",
-                "game slot",
-                "game dice",
-                "game rps",
-                "game guess",
-            ],
-            "🏆 成就彩蛋": ["achievements", "egg"],
-            "🎵 MyGo 專屬": ["mygo", "quote"],
-            "🛠️ 管理功能": ["reload", "status", "reset_flags", "cogs", "set_schedule"],
-        }
-
-        for category, command_list in cogs.items():
-            command_descriptions = []
-            for cmd_name in command_list:
-                # 從機器人找到指令物件
-                cmd = self.bot.get_command(cmd_name)
-                if cmd:
-                    # 優先使用 description，若無則使用 help
-                    description = cmd.description or cmd.help or "沒有說明"
-                    # 格式化指令，只顯示斜線用法
-                    command_descriptions.append(f"🔹 **/{cmd.name}**: {description}")
-                else:
-                    command_descriptions.append(f"🔹 **/{cmd_name}**: *指令不存在*")
-
-            if command_descriptions:
-                embed.add_field(
-                    name=f"**{category}**",
-                    value="\n".join(command_descriptions),
-                    inline=False,
-                )
-
-        # 新增自動功能的說明
+        # 一般功能
         embed.add_field(
-            name="✨ 自動功能 (無須指令)",
-            value="除了指令外，我還有一些酷酷的自動功能：\n"
-            "- **經驗與金錢**: 在任何頻道發言（指令除外）都能獲得經驗值和金錢，還可能觸發隨機事件！\n"
-            "- **AI 智慧聊天**: 直接**提及 (mention)** 我 (`@NTNU CSIE Camp Bot`) 就可以跟我聊天。\n"
-            "- **角色風格轉換**: 在特定的風格轉換頻道發言，訊息會自動變成該角色的風格。\n"
-            "- **彩蛋系統**: 在任何地方輸入隱藏的「彩蛋關鍵字」來發現驚喜！",
+            name="🎯 一般功能",
+            value="""
+/profile — 查詢你的等級、經驗值、金錢
+/links — 營隊重要連結
+/schedule — 查詢目前活動
+/help — 顯示本說明
+""",
             inline=False,
         )
-
+        # 遊戲經濟
+        embed.add_field(
+            name="💰 遊戲與經濟",
+            value=f"""
+/checkin — 每日簽到抽運勢，獲得金錢、隨機引言與圖片
+/scoreboard — 查看經驗值排行榜
+/game slot <金額> — 拉霸遊戲
+/game dice <金額> — 骰子比大小
+/game rps <金額> <選項> — 剪刀石頭布
+/game guess <金額> — 猜數字遊戲（互動按鈕）
+> **遊戲頻道限制**：請在 {game_channel_link} 使用
+""",
+            inline=False,
+        )
+        # 成就與彩蛋
+        embed.add_field(
+            name="🏆 成就與彩蛋",
+            value="""
+/achievements — 查看你已解鎖的成就
+/egg — 查詢你發現的彩蛋
+> **彩蛋提示**：找到彩蛋後，直接在任何群組頻道輸入彩蛋內容即可觸發。
+> 彩蛋格式為 `flag{||XXXX||}`，請將 `XXXX` 替換為你發現的彩蛋內容。
+""",
+            inline=False,
+        )
+        # MyGo
+        embed.add_field(
+            name="🎵 MyGo 專屬",
+            value="""
+/mygo <關鍵字> — 搜尋 MyGO!!!!! 圖片
+/mygo_quote — 隨機 MyGO!!!!! 名言
+""",
+            inline=False,
+        )
+        # AI 互動
+        embed.add_field(
+            name="🤖 AI 互動",
+            value=f"""
+@{bot_name} — 直接提及即可與 AI (Gemini) 聊天
+在特定風格頻道發言，訊息自動轉換角色風格：{style_channels_str}
+""",
+            inline=False,
+        )
         embed.set_footer(
             text="NTNU CSIE Camp 2025",
             icon_url=self.bot.user.display_avatar.url,
@@ -190,8 +232,8 @@ class General(commands.Cog):
         embed.set_thumbnail(
             url="https://raw.githubusercontent.com/CSIE-Camp/camp-public-bot/main/assets/camp_logo.png"
         )
-
-        await ctx.send(embed=embed)
+        # 僅自己可見
+        await ctx.send(embed=embed, ephemeral=True)
 
 
 async def setup(bot: commands.Bot):
