@@ -9,7 +9,7 @@ from src.constants import Colors, FLAGS_FILE
 
 
 class EasterEgg(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.flags_data = self.load_flags_data()
         self.user_data = user_data_manager
@@ -130,5 +130,5 @@ class EasterEgg(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(EasterEgg(bot))

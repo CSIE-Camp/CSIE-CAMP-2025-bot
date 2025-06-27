@@ -9,7 +9,7 @@ from typing import Optional
 class AchievementCog(commands.Cog):
     """成就相關指令"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @app_commands.command(name="achievements", description="顯示你或指定用戶的成就")
@@ -56,5 +56,5 @@ class AchievementCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(AchievementCog(bot))

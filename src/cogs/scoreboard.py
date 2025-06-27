@@ -10,7 +10,7 @@ BOT_STATE_FILE = Path(constants.BOT_STATE_FILE)
 
 
 class Scoreboard(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.user_data = user_data_manager
         self.scoreboard_message_ids = {}  # {category: message_id}
@@ -166,5 +166,5 @@ class Scoreboard(commands.Cog):
         await asyncio.sleep(10)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(Scoreboard(bot))
