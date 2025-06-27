@@ -15,6 +15,7 @@ import random
 import json
 from typing import Optional, List
 import datetime
+import asyncio
 from io import BytesIO
 
 from src.utils.image_gen import generate_image
@@ -29,8 +30,10 @@ from src.constants import (
     PROGRESS_BAR_EMPTY,
     FORTUNE_LEVELS,
     ACG_QUOTES_FILE,
+    QUOTE_REPLACEMENTS,
     Colors,
 )
+from src import config
 
 
 class General(commands.Cog):
@@ -154,7 +157,6 @@ class General(commands.Cog):
         image_bytes = None
         try:
             # 添加超時限制，避免卡住太久
-            import asyncio
 
             image_bytes = await asyncio.wait_for(
                 self._generate_fortune_image(quote), timeout=30.0
@@ -166,23 +168,35 @@ class General(commands.Cog):
 
         # 根據圖片生成結果決定回傳方式
         if image_bytes:
-            await interaction.followup.send(
-                embed=embed, file=discord.File(image_bytes, filename="fortune.png")
-            )
+            # 將圖片設置為 embed 的圖片
+            file = discord.File(image_bytes, filename="fortune.png")
+            embed.set_image(url="attachment://fortune.png")
+            await interaction.followup.send(embed=embed, file=file)
         else:
             # 圖片生成失敗時，只顯示文字 embed
             await interaction.followup.send(embed=embed)
 
     def _get_random_fortune(self) -> tuple[str, int, str]:
         """隨機取得運勢和名言"""
-        fortune, color = random.choice(FORTUNE_LEVELS)
-        quote = random.choice(self.quotes) if self.quotes else "今天也要元氣滿滿喔！"
+        # 使用權重來選擇運勢
+        weights = [weight for _, _, weight in FORTUNE_LEVELS]
+        chosen_fortune = random.choices(FORTUNE_LEVELS, weights=weights, k=1)[0]
+        fortune, color, _ = chosen_fortune
+
+        # 隨機選擇一個名言並處理替換
+        raw_quote = (
+            random.choice(self.quotes) if self.quotes else "今天也要元氣滿滿喔！"
+        )
+
+        quote = raw_quote
+        for old, new in QUOTE_REPLACEMENTS.items():
+            quote = quote.replace(old, new)
+
         return fortune, color, quote
 
     async def _generate_fortune_image(self, quote: str) -> BytesIO | None:
         """生成運勢圖片"""
         # 如果沒有配置 HUGGINGFACE_TOKEN，則跳過圖片生成
-        from src import config
 
         if not config.HUGGINGFACE_TOKEN:
             print("⚠️  未配置 HUGGINGFACE_TOKEN，跳過圖片生成")
