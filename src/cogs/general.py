@@ -3,7 +3,6 @@
 
 提供基礎的機器人功能：
 - 用戶資料查詢
-- 每日抽籤運勢
 - 幫助指令
 - 相關連結顯示
 """
@@ -11,14 +10,9 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import random
-import json
-from typing import Optional, List
 import datetime
-import asyncio
-from io import BytesIO
+from typing import Optional
 
-from src.utils.image_gen import generate_image
 from src.utils.user_data import user_data_manager
 from src.constants import (
     DEFAULT_LEVEL,
@@ -28,12 +22,8 @@ from src.constants import (
     PROGRESS_BAR_LENGTH,
     PROGRESS_BAR_FILLED,
     PROGRESS_BAR_EMPTY,
-    FORTUNE_LEVELS,
-    ACG_QUOTES_FILE,
-    QUOTE_REPLACEMENTS,
     Colors,
 )
-from src import config
 
 
 class General(commands.Cog):
@@ -41,21 +31,6 @@ class General(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.quotes: List[str] = self._load_quotes()
-
-    def _load_quotes(self) -> List[str]:
-        """載入動漫名言資料"""
-        try:
-            with open(ACG_QUOTES_FILE, "r", encoding="utf-8") as f:
-                quotes = json.load(f)
-                print(f"📚 已載入 {len(quotes)} 條名言")
-                return quotes
-        except FileNotFoundError:
-            print(f"❌ 找不到名言檔案：{ACG_QUOTES_FILE}")
-            return []
-        except json.JSONDecodeError:
-            print(f"❌ 名言檔案格式錯誤：{ACG_QUOTES_FILE}")
-            return []
 
     @app_commands.command(
         name="profile", description="查詢用戶的等級、經驗值和金錢資料"
@@ -125,85 +100,6 @@ class General(commands.Cog):
         embed.add_field(name="**進度**", value=f"`{progress_bar}`", inline=False)
         return embed
 
-    @app_commands.command(name="draw", description="每日運勢抽籤")
-    async def draw(self, interaction: discord.Interaction):
-        """每日運勢抽籤"""
-        await interaction.response.defer(thinking=True)
-
-        user_data = await user_data_manager.get_user(interaction.user)
-        today_str = datetime.date.today().isoformat()
-
-        if user_data.get("last_draw_date") == today_str:
-            await interaction.followup.send(
-                "你今天已經抽過籤了，明天再來吧！", ephemeral=True
-            )
-            return
-
-        fortune, color, quote = self._get_random_fortune()
-
-        # 建立運勢嵌入訊息
-        embed = discord.Embed(
-            title="🔮 今日運勢", description=f"**{fortune}**", color=color
-        )
-        embed.add_field(name="💭 今日語錄", value=f"*{quote}*", inline=False)
-        embed.set_footer(text=f"為 {interaction.user.display_name} 抽取")
-
-        # 先更新用戶資料，避免因圖片生成失敗而沒有記錄今日抽籤
-        user_data["last_draw_date"] = today_str
-        await user_data_manager.update_user_data(interaction.user.id, user_data)
-
-        # 嘗試生成圖片（添加超時保護）
-        print(f"正在生成運勢圖片，引用語錄: {quote}")
-        image_bytes = None
-        try:
-            # 添加超時限制，避免卡住太久
-
-            image_bytes = await asyncio.wait_for(
-                self._generate_fortune_image(quote), timeout=30.0
-            )
-        except asyncio.TimeoutError:
-            print("⏰ 圖片生成超時，將只顯示文字版本")
-        except (ConnectionError, ValueError, ImportError) as e:
-            print(f"❌ 圖片生成失敗: {e}")
-
-        # 根據圖片生成結果決定回傳方式
-        if image_bytes:
-            # 將圖片設置為 embed 的圖片
-            file = discord.File(image_bytes, filename="fortune.png")
-            embed.set_image(url="attachment://fortune.png")
-            await interaction.followup.send(embed=embed, file=file)
-        else:
-            # 圖片生成失敗時，只顯示文字 embed
-            await interaction.followup.send(embed=embed)
-
-    def _get_random_fortune(self) -> tuple[str, int, str]:
-        """隨機取得運勢和名言"""
-        # 使用權重來選擇運勢
-        weights = [weight for _, _, weight in FORTUNE_LEVELS]
-        chosen_fortune = random.choices(FORTUNE_LEVELS, weights=weights, k=1)[0]
-        fortune, color, _ = chosen_fortune
-
-        # 隨機選擇一個名言並處理替換
-        raw_quote = (
-            random.choice(self.quotes) if self.quotes else "今天也要元氣滿滿喔！"
-        )
-
-        quote = raw_quote
-        for old, new in QUOTE_REPLACEMENTS.items():
-            quote = quote.replace(old, new)
-
-        return fortune, color, quote
-
-    async def _generate_fortune_image(self, quote: str) -> BytesIO | None:
-        """生成運勢圖片"""
-        # 如果沒有配置 HUGGINGFACE_TOKEN，則跳過圖片生成
-
-        if not config.HUGGINGFACE_TOKEN:
-            print("⚠️  未配置 HUGGINGFACE_TOKEN，跳過圖片生成")
-            return None
-
-        return await generate_image(quote)
-
     @app_commands.command(name="links", description="顯示營隊相關連結")
     async def links(self, interaction: discord.Interaction):
         """顯示營隊相關連結"""
@@ -242,9 +138,9 @@ class General(commands.Cog):
 
         # 從 cogs 中動態生成指令列表
         cogs = {
-            "🎯 一般功能": ["profile", "links", "draw", "schedule", "help"],
+            "🎯 一般功能": ["profile", "links", "schedule", "help"],
             "💰 遊戲經濟": [
-                "sign_in",
+                "checkin",
                 "scoreboard",
                 "game slot",
                 "game dice",

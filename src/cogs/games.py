@@ -18,20 +18,31 @@ class RPSView(discord.ui.View):
         self.challenger_choice = None
         self.opponent_choice = None
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return interaction.user in (self.challenger, self.opponent)
+    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+        if interaction.user not in (self.challenger, self.opponent):
+            await interaction.response.send_message(
+                "這不是你的遊戲！只有參與對戰的玩家才能選擇。", ephemeral=True
+            )
+            return False
+        return True
 
     @discord.ui.button(label="剪刀 ✂️", style=discord.ButtonStyle.primary)
-    async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def rock(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):  # pylint: disable=unused-argument
         await self.handle_choice(interaction, "剪刀")
 
     @discord.ui.button(label="石頭 🗿", style=discord.ButtonStyle.primary)
-    async def paper(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def paper(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):  # pylint: disable=unused-argument
         await self.handle_choice(interaction, "石頭")
 
     @discord.ui.button(label="布 📄", style=discord.ButtonStyle.primary)
     async def scissors(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,  # pylint: disable=unused-argument
     ):
         await self.handle_choice(interaction, "布")
 
@@ -42,6 +53,11 @@ class RPSView(discord.ui.View):
             self.opponent_choice = choice
 
         await interaction.response.send_message(f"你選擇了 {choice}！", ephemeral=True)
+
+        # 如果對手是機器人，讓機器人自動選擇
+        if self.opponent.bot and self.challenger_choice and not self.opponent_choice:
+            bot_choices = ["剪刀", "石頭", "布"]
+            self.opponent_choice = random.choice(bot_choices)
 
         if self.challenger_choice and self.opponent_choice:
             self.stop()
@@ -100,7 +116,7 @@ class GuessButtonView(discord.ui.View):
             button.callback = self.button_callback
             self.add_item(button)
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
         return interaction.user == self.player
 
     async def button_callback(self, interaction: discord.Interaction):
@@ -192,7 +208,6 @@ class Games(commands.Cog):
         result_str = "".join(result)
         author_mention = interaction.user.mention
         author_name = interaction.user.name
-        await interaction.followup.send(f"{result_str}", ephemeral=True)
 
         max_count = max(result.count(symbol) for symbol in set(symbols))
         winnings = 0
@@ -230,7 +245,7 @@ class Games(commands.Cog):
 
         user["money"] += winnings
         await user_data_manager.update_user_data(interaction.user.id, user)
-        await interaction.followup.send(msg)
+        await interaction.followup.send(f"# {result_str}\n{msg}", ephemeral=True)
 
         await achievement_manager.check_slot_achievements(
             interaction.user.id, max_count, interaction
@@ -240,9 +255,14 @@ class Games(commands.Cog):
         )
 
     @game.command(name="dice", description="骰子比大小")
-    @app_commands.describe(amount="要下的賭注金額")
-    async def dice(self, interaction: discord.Interaction, amount: int):
-        """骰子遊戲"""
+    @app_commands.describe(amount="要下的賭注金額", opponent="挑戰的對手")
+    async def dice(
+        self,
+        interaction: discord.Interaction,
+        amount: int,
+        opponent: Optional[discord.Member] = None,
+    ):
+        """骰子遊戲，支援玩家 vs 玩家 或 玩家 vs 機器人"""
         user = await user_data_manager.get_user(interaction.user.id, interaction.user)
         current_money = user["money"]
 
@@ -252,45 +272,106 @@ class Games(commands.Cog):
             )
             return
 
-        if amount > current_money:
-            await interaction.response.send_message(
-                f"你只有 {current_money} 元，想賭 {amount} 元？去賺點錢再來吧！",
-                ephemeral=True,
-            )
-            return
-
-        await interaction.response.defer()
-
-        player_roll = random.randint(1, 6)
-        bot_roll = random.randint(1, 6)
-
-        await interaction.followup.send(
-            f"你擲出了 {player_roll} 點！\n我擲出了 {bot_roll} 點！", ephemeral=True
-        )
-
-        if player_roll > bot_roll:
-            winnings = amount
-            msg = f"恭喜！你贏了 {winnings} 元！"
-            user["money"] += winnings
-        elif player_roll < bot_roll:
-            winnings = -amount
-            msg = f"可惜！你輸了 {abs(winnings)} 元！"
-            user["money"] += winnings
-        else:
-            winnings = 0
-            msg = "平手！沒有輸贏。"
-
-        if winnings != 0:
+        if opponent and not opponent.bot:
+            # 玩家 vs 玩家
+            if opponent == interaction.user:
+                await interaction.response.send_message(
+                    "你不能挑戰自己啦！", ephemeral=True
+                )
+                return
+            opponent_data = await user_data_manager.get_user(opponent.id, opponent)
+            if current_money < amount:
+                await interaction.response.send_message(
+                    f"你的錢不夠下注 {amount} 元！", ephemeral=True
+                )
+                return
+            if opponent_data["money"] < amount:
+                await interaction.response.send_message(
+                    f"{opponent.display_name} 的錢不夠接受 {amount} 元的賭注！",
+                    ephemeral=True,
+                )
+                return
+            await interaction.response.defer()
+            # 雙方擲骰
+            player_roll = random.randint(1, 6)
+            opponent_roll = random.randint(1, 6)
+            dice_emojis = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"]
+            if player_roll > opponent_roll:
+                winnings = amount
+                user["money"] += winnings
+                opponent_data["money"] -= winnings
+                result_msg = f"{interaction.user.mention} 擲出 {dice_emojis[player_roll-1]}，{opponent.mention} 擲出 {dice_emojis[opponent_roll-1]}\n\n{interaction.user.mention} 贏得 {winnings} 元！"
+            elif player_roll < opponent_roll:
+                winner = opponent
+                loser = interaction.user
+                winnings = amount
+                user["money"] -= winnings
+                opponent_data["money"] += winnings
+                result_msg = f"{interaction.user.mention} 擲出 {dice_emojis[player_roll-1]}，{opponent.mention} 擲出 {dice_emojis[opponent_roll-1]}\n\n{opponent.mention} 贏得 {winnings} 元！"
+            else:
+                winner = None
+                loser = None
+                winnings = 0
+                result_msg = f"{interaction.user.mention} 和 {opponent.mention} 都擲出 {dice_emojis[player_roll-1]}，平手！"
             await user_data_manager.update_user_data(interaction.user.id, user)
-        await interaction.followup.send(msg)
+            await user_data_manager.update_user_data(opponent.id, opponent_data)
+            await interaction.followup.send(result_msg)
+            await achievement_manager.check_money_achievements(
+                interaction.user.id, user["money"], interaction
+            )
+            await achievement_manager.check_money_achievements(
+                opponent.id, opponent_data["money"], interaction
+            )
+        else:
+            # 玩家 vs 機器人
+            if current_money < amount:
+                await interaction.response.send_message(
+                    f"你只有 {current_money} 元，想賭 {amount} 元？去賺點錢再來吧！",
+                    ephemeral=True,
+                )
+                return
+            await interaction.response.defer()
+            player_roll = random.randint(1, 6)
+            bot_roll = random.randint(1, 6)
+            dice_emojis = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"]
+            if player_roll > bot_roll:
+                winnings = amount
+                result_msg = "你贏了！"
+                result_emoji = "🎉"
+                user["money"] += winnings
+            elif player_roll < bot_roll:
+                winnings = -amount
+                result_msg = "我贏了！"
+                result_emoji = "😅"
+                user["money"] += winnings
+            else:
+                winnings = 0
+                result_msg = "平手！"
+                result_emoji = "🤝"
+            result_text = (
+                f"{result_emoji} **骰子比大小結果**\n\n"
+                f"你擲出了：{dice_emojis[player_roll-1]} **{player_roll} 點**\n"
+                f"我擲出了：{dice_emojis[bot_roll-1]} **{bot_roll} 點**\n\n"
+                f"**{result_msg}**"
+            )
+            if winnings > 0:
+                result_text += f"\n💰 你贏得了 **{winnings}** 元！"
+            elif winnings < 0:
+                result_text += f"\n💸 你輸掉了 **{abs(winnings)}** 元..."
+            if winnings != 0:
+                await user_data_manager.update_user_data(interaction.user.id, user)
+            await interaction.followup.send(result_text)
+            await achievement_manager.check_money_achievements(
+                interaction.user.id, user["money"], interaction
+            )
 
     @game.command(name="rps", description="剪刀石頭布")
-    @app_commands.describe(opponent="挑戰的對手", amount="賭注金額")
+    @app_commands.describe(amount="賭注金額", opponent="挑戰的對手")
     async def rps(
         self,
         interaction: discord.Interaction,
+        amount: int,
         opponent: Optional[discord.Member] = None,
-        amount: int = 0,
     ):
         """剪刀石頭布遊戲"""
         if opponent == interaction.user:
@@ -325,15 +406,23 @@ class Games(commands.Cog):
 
             view = RPSView(interaction.user, opponent, amount)
             await interaction.response.send_message(
-                f"{opponent.mention}，{interaction.user.mention} 邀請你來一場剪刀石頭布！賭注為 {amount} 元。請選擇你的出拳：",
+                f"{opponent.mention}，{interaction.user.mention} 邀請你來一場剪刀石頭布！賭注為 {amount} 元。請選擇你的出拳：\n"
+                f"⚠️ 只有 {interaction.user.mention} 和 {opponent.mention} 可以點擊按鈕！",
                 view=view,
             )
         else:
             # Play against the bot
-            view = RPSView(interaction.user, self.bot.user, 0)
-            await interaction.response.send_message(
-                "來跟我一決勝負吧！請出拳：", view=view
-            )
+            if amount > 0:
+                # 有賭注時顯示按鈕選擇
+                view = RPSView(interaction.user, self.bot.user, amount)
+                await interaction.response.send_message(
+                    f"來跟我一決勝負吧！賭注 {amount} 元。請出拳：",
+                    view=view,
+                    ephemeral=True,
+                )
+            else:
+                # 沒有賭注時直接顯示結果
+                await self._play_rps_instant(interaction)
 
     @game.command(name="guess", description="猜按鈕遊戲")
     @app_commands.describe(amount="要下的賭注金額")
@@ -358,6 +447,38 @@ class Games(commands.Cog):
         view = GuessButtonView(interaction.user, amount, interaction.channel)
         await interaction.response.send_message(
             "選擇一個按鈕！", view=view, ephemeral=True
+        )
+
+    async def _play_rps_instant(self, interaction: discord.Interaction):
+        """即時剪刀石頭布遊戲（無賭注，直接顯示結果）"""
+        choices = ["剪刀", "石頭", "布"]
+        player_choice = random.choice(choices)
+        bot_choice = random.choice(choices)
+
+        # 判定勝負
+        if player_choice == bot_choice:
+            result_msg = "平手！"
+            result_emoji = "🤝"
+        elif (
+            (player_choice == "石頭" and bot_choice == "剪刀")
+            or (player_choice == "剪刀" and bot_choice == "布")
+            or (player_choice == "布" and bot_choice == "石頭")
+        ):
+            result_msg = "你贏了！"
+            result_emoji = "🎉"
+        else:
+            result_msg = "我贏了！"
+            result_emoji = "🤖"
+
+        # 選擇對應的 emoji
+        choice_emojis = {"剪刀": "✂️", "石頭": "🗿", "布": "📄"}
+
+        await interaction.response.send_message(
+            f"{result_emoji} **剪刀石頭布結果**\n\n"
+            f"你出了：{choice_emojis[player_choice]} {player_choice}\n"
+            f"我出了：{choice_emojis[bot_choice]} {bot_choice}\n\n"
+            f"**{result_msg}**",
+            ephemeral=True,
         )
 
 
