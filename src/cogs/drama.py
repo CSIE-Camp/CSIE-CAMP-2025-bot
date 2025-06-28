@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 import random
 
-import config
+from src import config
 
 class Drama(commands.Cog):
     def __init__(self, bot: commands.Bot):
