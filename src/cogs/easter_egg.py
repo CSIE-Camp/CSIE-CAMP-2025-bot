@@ -35,7 +35,7 @@ class EasterEgg(commands.Cog):
 
             if flag_id in user.get("found_flags", []):
                 await message.delete()
-                await message.channel.send(
+                await message.author.send(
                     f"{message.author.mention} 你已經找過這個彩蛋囉！", delete_after=5
                 )
                 return  # User has already found this flag
@@ -75,7 +75,7 @@ class EasterEgg(commands.Cog):
                         inline=False,
                     )
                     embed.set_footer(
-                        text=f"由 {self.bot.user.name} 記錄",
+                        text=f"使用 /egg 查詢你的彩蛋收藏！",
                         icon_url=self.bot.user.display_avatar.url,
                     )
 
@@ -83,7 +83,7 @@ class EasterEgg(commands.Cog):
 
             else:
                 await message.delete()
-                await message.channel.send(
+                await message.author.send(
                     f"{message.author.mention} 這個彩蛋已經被找到了，下次請早！",
                     delete_after=5,
                 )
