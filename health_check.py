@@ -134,6 +134,7 @@ def check_data_directory() -> bool:
         "flags.json",
         "mygo.json",
         "schedule.json",
+        "links.json"
     ]
 
     for file_name in data_files:

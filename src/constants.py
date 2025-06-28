@@ -57,6 +57,7 @@ FLAGS_FILE = f"{DATA_DIR}/flags.json"
 FLAGS_URL="https://docs.google.com/spreadsheets/d/1crf23wVyL0NPJH6DWcoAw_5qHgNEHUXPl4aaN6xCeHc/export?format=csv"
 MYGO_FILE = f"{DATA_DIR}/mygo.json"
 SCHEDULE_FILE = f"{DATA_DIR}/schedule.json"
+LINKS_FILE = f"{DATA_DIR}/links.json"
 
 
 # ===== 排行榜設定 =====
