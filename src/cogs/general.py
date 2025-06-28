@@ -11,6 +11,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import datetime
+import json
 from typing import Optional
 
 from src.utils.user_data import user_data_manager
@@ -22,6 +23,7 @@ from src.constants import (
     PROGRESS_BAR_LENGTH,
     PROGRESS_BAR_FILLED,
     PROGRESS_BAR_EMPTY,
+    LINKS_FILE,
     Colors,
 )
 from src import config
@@ -32,6 +34,11 @@ class General(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        try:
+            with open(LINKS_FILE, "r", encoding="utf-8") as f:
+                self.links = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.links = []
 
     @app_commands.command(
         name="profile", description="查詢用戶的等級、經驗值和金錢資料"
@@ -109,19 +116,12 @@ class General(commands.Cog):
             description="以下是本次資工營的相關連結，歡迎多加利用！",
             color=Colors.INFO,
         )
-        embed.add_field(
-            name="<:github:1257997891954475079> GitHub",
-            value="[https://github.com/CSIE-Camp/camp-public-bot](https://github.com/CSIE-Camp/camp-public-bot)",
-            inline=False,
-        )
-        embed.add_field(
-            name="<:ig:1257998497655689237> Instagram",
-            value="[https://www.instagram.com/ntnu_csie_camp_2025/](https://www.instagram.com/ntnu_csie_camp_2025/)",
-            inline=False,
-        )
-        embed.set_thumbnail(
-            url="https://raw.githubusercontent.com/CSIE-Camp/camp-public-bot/main/assets/camp_logo.png"
-        )
+        for link in self.links:
+            embed.add_field(
+                name=link["name"],
+                value=link["value"],
+                inline=False,
+            )
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await interaction.response.send_message(embed=embed)
 

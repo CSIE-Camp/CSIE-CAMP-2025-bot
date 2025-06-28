@@ -56,6 +56,7 @@ ACHIEVEMENTS_FILE = f"{DATA_DIR}/achievement.json"
 FLAGS_FILE = f"{DATA_DIR}/flags.json"
 MYGO_FILE = f"{DATA_DIR}/mygo.json"
 SCHEDULE_FILE = f"{DATA_DIR}/schedule.json"
+LINKS_FILE = f"{DATA_DIR}/links.json"
 
 
 # ===== 排行榜設定 =====
