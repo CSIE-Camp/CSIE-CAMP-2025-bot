@@ -6,7 +6,7 @@ import datetime
 from src import config
 from src.utils.user_data import user_data_manager
 from src.constants import Colors, FLAGS_FILE
-
+import pandas as pd
 
 class EasterEgg(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -14,7 +14,7 @@ class EasterEgg(commands.Cog):
         self.flags_data = self.load_flags_data()
         self.user_data = user_data_manager
 
-    def load_flags_data(self):
+    def load_flags_data(self) -> dict[str, dict[str, ]]:
         with open(FLAGS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
 
@@ -46,7 +46,7 @@ class EasterEgg(commands.Cog):
                 1 for u in all_users if flag_id in u.get("found_flags", [])
             )
 
-            if found_count < 3:
+            if found_count < flag_info["amount"]:
                 await message.delete()
 
                 user.setdefault("found_flags", []).append(flag_id)
@@ -58,9 +58,6 @@ class EasterEgg(commands.Cog):
                 if announcement_channel:
                     # 將當前找到的人數 +1 作為名次
                     found_order = found_count + 1
-                    order_text = {1: "第一位", 2: "第二位", 3: "第三位"}.get(
-                        found_order, f"第 {found_order} 位"
-                    )
 
                     embed = discord.Embed(
                         title="🎉 彩蛋尋獲！ 🎉",
@@ -74,7 +71,7 @@ class EasterEgg(commands.Cog):
                     )
                     embed.add_field(
                         name="尋獲成就",
-                        value=f"你是**{order_text}**找到此彩蛋的勇者！",
+                        value=f"你是**第 {found_order}/{int(flag_info['amount'])} 個**找到此彩蛋的勇者！",
                         inline=False,
                     )
                     embed.set_footer(

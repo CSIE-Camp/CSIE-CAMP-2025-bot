@@ -1,14 +1,16 @@
 {
-    "flag{||why_u_like_to_look_around_in_trash_can??!!||}": {
-        "id": 0,
-        "name": "拾荒老人"
-    },
-    "flag{||fc7e051acf235ba4aa783647469e67||}": {
-        "id": 1,
-        "name": "你的女朋友"
-    },
-    "flag{||997fbf1cdd04ab35b4976b4b8bd2d0||}": {
-        "id": 2,
-        "name": "來點緩衝嗎？"
-    }
+    "flag{||fc7e051acf235ba4aa783647469e67||}": {"狀態": "已使用", "id": 1, "flag": "flag{||fc7e051acf235ba4aa783647469e67||}", "amount": 3.0, "name": "男女朋友應該點不到"},
+    "flag{||997fbf1cdd04ab35b4976b4b8bd2d0||}": {"狀態": "已使用", "id": 2, "flag": "flag{||997fbf1cdd04ab35b4976b4b8bd2d0||}", "amount": 3.0, "name": "來點緩衝嗎？"},
+    "flag{||4c435d3171760edf7bf41a907eedc0||}": {"狀態": "已使用", "id": 3, "flag": "flag{||4c435d3171760edf7bf41a907eedc0||}", "amount": 3.0, "name": "暖暖的黑暗騎士"},
+    "flag{||834c63612b522bb88f0355da3188bb||}": {"狀態": "已使用", "id": 4, "flag": "flag{||834c63612b522bb88f0355da3188bb||}", "amount": 3.0, "name": "連一刻都沒有休息，立刻趕到戰場的是"},
+    "flag{||8a7264ea1da93415666491187670fa||}": {"狀態": "已使用", "id": 5, "flag": "flag{||8a7264ea1da93415666491187670fa||}", "amount": 3.0, "name": "讀我"},
+    "flag{||c157628198877cb96985ddddd2beb1||}": {"狀態": "已使用", "id": 6, "flag": "flag{||c157628198877cb96985ddddd2beb1||}", "amount": 3.0, "name": "歡迎光臨"},
+    "flag{||Wh@tDo3$TheF0x$ay||}": {"狀態": "已使用", "id": 31, "flag": "flag{||Wh@tDo3$TheF0x$ay||}", "amount": 3.0, "name": "你說什麼？狐狸是狼？！！"},
+    "flag{||y0u_f!n?_m3||}": {"狀態": "已使用", "id": 32, "flag": "flag{||y0u_f!n?_m3||}", "amount": 3.0, "name": "你找到我了"},
+    "flag{||take_it_yourself||}": {"狀態": "已使用", "id": 33, "flag": "flag{||take_it_yourself||}", "amount": 8.0, "name": "自己拿"},
+    "flag{||wanted_n_you||}": {"狀態": "已使用", "id": 34, "flag": "flag{||wanted_n_you||}", "amount": 8.0, "name": "我想要你"},
+    "flag{||I_am_watching||}": {"狀態": "已使用", "id": 35, "flag": "flag{||I_am_watching||}", "amount": 3.0, "name": "舉頭三尺有神明"},
+    "flag{||u_should_NOT_pas$||}": {"狀態": "已使用", "id": 36, "flag": "flag{||u_should_NOT_pas$||}", "amount": 3.0, "name": "Stuff Only"},
+    "flag{||SupeR_$up@u||}": {"狀態": "已使用", "id": 37, "flag": "flag{||SupeR_$up@u||}", "amount": 8.0, "name": "這是道具，禁止飲用"},
+    "flag{||L!ttLe_5_wo1f||}": {"狀態": "已使用", "id": 38, "flag": "flag{||L!ttLe_5_wo1f||}", "amount": 3.0, "name": "足以昏厥大象的針"}
 }
