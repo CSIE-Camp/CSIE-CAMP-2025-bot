@@ -1,0 +1,111 @@
+{
+  "bot_event_send_message": {
+    "ch_comment": "在事件中發送訊息",
+    "content": "# bot.event 發送訊息\n在 bot.event 中發送文字訊息到頻道。\n```python\n@bot.event\nasync def on_message(message):\n    # 發送文字訊息\n    await message.channel.send(\"文字\")\n```"
+  },
+  
+  "bot_command_send_message": {
+    "ch_comment": "在指令中發送訊息",
+    "content": "# bot.command 發送訊息\n在 bot.command 中發送文字訊息到頻道。\n```python\n@bot.command\nasync def command_name(ctx):\n    # 發送文字訊息\n    await ctx.send(\"文字\")\n```"
+  },
+  
+  "edit_message": {
+    "ch_comment": "修改已發送的訊息",
+    "content": "# 修改訊息\n修改已發送的訊息內容。\n```python\nimport asyncio\n\n@bot.event\nasync def on_message(message):\n    # 取得欲修改的訊息\n    msg = await message.channel.send(\"你好\")\n    \n    # 休息一秒\n    await asyncio.sleep(1)\n    \n    # 修改訊息\n    await msg.edit(\"你好帥\")\n```"
+  },
+  
+  "delete_message": {
+    "ch_comment": "刪除訊息",
+    "content": "# 刪除訊息\n刪除指定的訊息。\n```python\n@bot.command\nasync def command_name(ctx):\n    # 取得欲刪除的訊息\n    msg = await ctx.send(\"文字\")\n    \n    # 休息一秒\n    await asyncio.sleep(1)\n    \n    # 刪除訊息\n    await msg.delete()\n```"
+  },
+  
+  "detect_exact_text": {
+    "ch_comment": "偵測完全相符的文字",
+    "content": "# 偵測完全相符文字\n偵測使用者輸入的完全相符文字。\n```python\n@bot.event\nasync def on_message(message):\n    # 偵測完全相符的文字\n    if message.content == \"測試\":\n        await message.channel.send(\"測試成功\")\n```"
+  },
+  
+  "detect_startswith_text": {
+    "ch_comment": "偵測開頭文字並分析參數",
+    "content": "# 偵測開頭文字\n偵測以特定文字開頭的訊息並分析參數。\n```python\n@bot.event\nasync def on_message(message):\n    # 偵測開頭文字\n    if message.content.startswith(\"測試\"):\n        # 將輸入用空格分開並放入 list 中\n        inputs = message.content.split(\" \")\n        await message.channel.send(f\"指令為：{inputs[0]}\")\n        await message.channel.send(f\"參數為：{inputs[1]}\")\n```"
+  },
+  
+  "send_file_event": {
+    "ch_comment": "在事件中發送檔案",
+    "content": "# bot.event 發送檔案\n在 bot.event 中發送檔案到頻道。\n```python\n@bot.event\nasync def on_message(message):\n    # 發送檔案\n    await message.channel.send(file=discord.File(r'圖片路徑'))\n```"
+  },
+  
+  "send_file_command": {
+    "ch_comment": "在指令中發送檔案",
+    "content": "# bot.command 發送檔案\n在 bot.command 中發送檔案到頻道。\n```python\n@bot.command\nasync def command_name(ctx):\n    # 發送檔案\n    await ctx.send(file=discord.File(r'圖片路徑'))\n```"
+  },
+  
+  "embed_event": {
+    "ch_comment": "在事件中發送嵌入訊息",
+    "content": "# bot.event 嵌入訊息\n在 bot.event 中創建並發送嵌入訊息。\n```python\n@bot.event\nasync def on_message(message):\n    # 創建嵌入訊息\n    embed = discord.Embed(title=\"測試\", color=0x940000)\n    embed.add_field(name=\"你好\", value=\"世界\", inline=False)\n    await message.channel.send(embed=embed)\n```"
+  },
+  
+  "embed_command": {
+    "ch_comment": "在指令中發送嵌入訊息",
+    "content": "# bot.command 嵌入訊息\n在 bot.command 中創建並發送嵌入訊息。\n```python\n@bot.command\nasync def command_name(ctx):\n    # 創建嵌入訊息\n    embed = discord.Embed(title=\"測試\", color=0x940000)\n    embed.add_field(name=\"你好\", value=\"世界\", inline=False)\n    await ctx.send(embed=embed)\n```"
+  },
+  
+  "add_reaction": {
+    "ch_comment": "新增表情符號到訊息",
+    "content": "# 新增表情符號\n為訊息新增表情符號。\n```python\n@bot.event\nasync def on_message(message):\n    # 發送訊息\n    msg = await message.channel.send(\"想新增表情符號的訊息\")\n    \n    # 新增表情符號\n    emojis = [\"😀\", \"😁\", \"😂\"]\n    for emoji in emojis:\n        await msg.add_reaction(emoji)\n```"
+  },
+  
+  "remove_reaction": {
+    "ch_comment": "移除表情符號從訊息",
+    "content": "# 移除表情符號\n從訊息中移除表情符號。\n```python\n@bot.event\nasync def on_message(message):\n    # 發送訊息\n    msg = await message.channel.send(\"想移除表情符號的訊息\")\n    \n    # 移除表情符號\n    emojis = [\"😀\", \"😁\", \"😂\"]\n    for emoji in emojis:\n        await msg.remove_reaction(emoji, bot.user)\n```"
+  },
+  
+  "wait_for_event": {
+    "ch_comment": "等待特定事件發生",
+    "content": "# 等待事件\n等待特定事件發生並檢查條件。\n```python\n@bot.event\nasync def on_message(message):\n    # 定義檢查函數\n    def check(reaction, user):\n        if not user.bot:  # 忽略機器人自己的訊息\n            return True\n        else:\n            return False\n    \n    # 等待反應事件，10秒超時\n    await bot.wait_for(\"reaction_add\", check=check, timeout=10)\n```"
+  },
+  
+  "webhook_send": {
+    "ch_comment": "使用 webhook 模擬發送訊息",
+    "content": "# Webhook 發送訊息\n創建 webhook 並模擬其他使用者發送訊息。\n```python\n@bot.event\nasync def on_message(message):\n    # 創建 webhook\n    webhook = await message.channel.create_webhook(name=\"PET_Webhook\")\n    \n    # 發送訊息（名字和頭像網址可自定義）\n    await webhook.send(\"測試\", username=\"名字\", avatar_url=\"頭像網址\", wait=True)\n    \n    # 刪除 webhook\n    await webhook.delete()\n```"
+  },
+  
+  "on_reaction_add": {
+    "ch_comment": "處理新增表情符號事件",
+    "content": "# on_reaction_add 事件\n處理使用者新增表情符號的事件。\n```python\n@bot.event\nasync def on_reaction_add(reaction, user):\n    # 偵測特定表情符號\n    if reaction.emoji == \"某個表情符號\":\n        # 執行相關操作\n        pass\n```"
+  },
+  
+  "on_reaction_remove": {
+    "ch_comment": "處理移除表情符號事件",
+    "content": "# on_reaction_remove 事件\n處理使用者移除表情符號的事件。\n```python\n@bot.event\nasync def on_reaction_remove(reaction, user):\n    # 偵測特定表情符號\n    if reaction.emoji == \"某個表情符號\":\n        # 執行相關操作\n        pass\n```"
+  },
+  
+  "gemini_setup": {
+    "ch_comment": "設定 Gemini AI 文字生成",
+    "content": "# Gemini AI 設定\n設定 Google Gemini AI 用於文字生成。\n```python\nimport google.generativeai as genai\n\n# 填入你的 Gemini API key\nGEMINI_API_KEY = \"\"\n\n# 啟動 gemini\ngenai.configure(api_key=GEMINI_API_KEY)\n\n# 設定模型\nmodel = genai.GenerativeModel('gemini-2.0-flash')\n\n# 生成文字的函數\ndef generate_text(prompt):\n    response = model.generate_content(prompt)\n    text = response.text\n    return text\n```"
+  },
+  
+  "ai_chat_command": {
+    "ch_comment": "AI 聊天指令實作",
+    "content": "# AI 聊天指令\n使用 AI 生成文字回應的聊天指令。\n```python\n@bot.command()\nasync def chat(ctx, *, prompt):\n    # 生成 AI 回應\n    response = generate_text(prompt)\n    await ctx.send(response)\n```"
+  },
+  
+  "ai_image_setup": {
+    "ch_comment": "設定 AI 圖片生成請求",
+    "content": "# AI 圖片生成設定\n設定向 ngrok 發送圖片生成請求。\n```python\nimport requests\nimport base64\nfrom io import BytesIO\n\n# 請替換成您的 ngrok URL\nNGROK_URL = \"\"\n\n# 發送圖片生成請求\nasync def request_photo(prompt):\n    return requests.post(\n        f\"{NGROK_URL}/\",\n        json={\"prompt\": prompt}\n    )\n```"
+  },
+  
+  "ai_image_file": {
+    "ch_comment": "生成圖片並以檔案形式發送",
+    "content": "# AI 圖片生成（檔案）\n生成圖片並以檔案形式發送。\n```python\nasync def generate_picture_and_send(ctx, *, prompt):\n    try:\n        response = await request_photo(prompt)\n        \n        if response.status_code == 200:\n            data = response.json()\n            if data['status'] == 'success':\n                # 將 base64 轉回圖片\n                image_data = base64.b64decode(data['image'])\n                im = BytesIO(image_data)\n                \n                # 發送圖片檔案\n                file = discord.File(im, filename='generated_image.png')\n                await ctx.send(file=file)\n                \n    except Exception as e:\n        print(f\"發生錯誤: {str(e)}\")\n```"
+  },
+  
+  "ai_image_embed": {
+    "ch_comment": "生成圖片並以嵌入形式發送",
+    "content": "# AI 圖片生成（嵌入）\n生成圖片並以嵌入訊息形式發送。\n```python\nasync def generate_picture_byteIO(prompt):\n    try:\n        response = await request_photo(prompt)\n        \n        if response.status_code == 200:\n            data = response.json()\n            if data['status'] == 'success':\n                # 將 base64 轉回圖片\n                image_data = base64.b64decode(data['image'])\n                return BytesIO(image_data)\n                \n    except Exception as e:\n        print(f\"發生錯誤: {str(e)}\")\n        return \"\"\n\nasync def send_byteIO_embed(ctx, *, buffer):\n    file = discord.File(buffer, \"test.png\")\n    \n    embed = discord.Embed(title=\"測試\", color=0x940000)\n    embed.set_image(url=\"attachment://test.png\")\n    await ctx.send(embed=embed, file=file)\n```"
+  },
+  
+  "ai_image_webhook": {
+    "ch_comment": "生成圖片並用 webhook 發送",
+    "content": "# AI 圖片生成（Webhook）\n生成圖片並使用 webhook 發送。\n```python\nasync def create_webhook_byteIO(ctx, *, webhook_name, webhook_avatar_buffer):\n    # 創建帶有圖片頭像的 webhook\n    webhook = await ctx.channel.create_webhook(\n        name=webhook_name, \n        avatar=webhook_avatar_buffer.read()\n    )\n    return webhook\n\n@bot.command()\nasync def webhook_send(ctx, *, prompt):\n    # 生成圖片\n    buffer = await generate_picture_byteIO(prompt)\n    # 創建 webhook\n    webhook = await create_webhook_byteIO(ctx, \"test\", buffer)\n    # 發送訊息\n    await webhook.send(\"你好世界\")\n```"
+  }
+}

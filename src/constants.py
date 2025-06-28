@@ -58,6 +58,7 @@ FLAGS_URL="https://docs.google.com/spreadsheets/d/1crf23wVyL0NPJH6DWcoAw_5qHgNEH
 MYGO_FILE = f"{DATA_DIR}/mygo.json"
 SCHEDULE_FILE = f"{DATA_DIR}/schedule.json"
 LINKS_FILE = f"{DATA_DIR}/links.json"
+NOTES_FILE = f"{DATA_DIR}/notes.json"
 
 
 # ===== 排行榜設定 =====
