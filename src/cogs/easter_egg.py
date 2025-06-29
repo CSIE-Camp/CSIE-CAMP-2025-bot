@@ -171,14 +171,6 @@ class EasterEgg(commands.Cog):
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="ls", description="???")
-    async def ls(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True, ephemeral=True)
-
-        await interaction.followup.send(
-            "```sh\n$ ls\nTOTAL 1 FILE(S)\nkajsdlifjawoiefjsjcavlkasjdlfkjlk.txt\n```"
-        )
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(EasterEgg(bot))
