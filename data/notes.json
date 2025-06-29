@@ -1,4 +1,9 @@
 {
+  "dictionary_read": {
+    "ch_comment": "讀取字典值的方法",
+    "content": "# 讀取字典值\n從字典中讀取指定的鍵值。\n```python\ndictionary = {\"key\": \"value\"}\nvalue = dictionary[\"key\"]\n```"
+  },
+
   "bot_event_send_message": {
     "ch_comment": "在事件中發送訊息",
     "content": "# bot.event 發送訊息\n在 bot.event 中發送文字訊息到頻道。\n```python\n@bot.event\nasync def on_message(message):\n    # 發送文字訊息\n    await message.channel.send(\"文字\")\n```"
@@ -86,7 +91,7 @@
   
   "ai_chat_command": {
     "ch_comment": "AI 聊天指令實作",
-    "content": "# AI 聊天指令\n使用 AI 生成文字回應的聊天指令。\n```python\n@bot.command()\nasync def chat(ctx, *, prompt):\n    # 生成 AI 回應\n    response = generate_text(prompt)\n    await ctx.send(response)\n```"
+    "content": "# AI 聊天指令\n使用 AI 生成文字回應的聊天指令。\n```python\n@bot.command()\nasync def chat(ctx, *, prompt):\n    # 生成 AI 回應\n    response = generate_word(prompt)\n    await ctx.send(response)\n```"
   },
   
   "ai_image_setup": {
@@ -96,7 +101,7 @@
   
   "ai_image_file": {
     "ch_comment": "生成圖片並以檔案形式發送",
-    "content": "# AI 圖片生成（檔案）\n生成圖片並以檔案形式發送。\n```python\nasync def generate_picture_and_send(ctx, *, prompt):\n    try:\n        response = await request_photo(prompt)\n        \n        if response.status_code == 200:\n            data = response.json()\n            if data['status'] == 'success':\n                # 將 base64 轉回圖片\n                image_data = base64.b64decode(data['image'])\n                im = BytesIO(image_data)\n                \n                # 發送圖片檔案\n                file = discord.File(im, filename='generated_image.png')\n                await ctx.send(file=file)\n                \n    except Exception as e:\n        print(f\"發生錯誤: {str(e)}\")\n```"
+    "content": "# AI 圖片生成（檔案）\n生成圖片並以檔案形式發送。\n```python\nasync def send_AI_picture(ctx, *, prompt):\n    try:\n        # 步驟1: 發送圖片生成請求\n        response = await request_photo(prompt)\n\n        # 步驟2: 檢查 API 回應狀態\n        if response.status_code != 200:\n            print(\"❌ API 請求失敗\")\n            return \"\"\n\n        # 步驟3: 解析 JSON 回應資料\n        data = response.json()\n\n        # 步驟4: 檢查圖片生成是否成功\n        if data['status'] != 'success':\n            print(\"❌ 圖片生成失敗\")\n            return \"\"\n      \n        # 步驟5: 將 base64 編碼的圖片轉換為檔案\n        image_data = base64.b64decode(data['image'])\n        buffer = BytesIO(image_data)\n        file = discord.File(buffer, filename=\"gift.png\")\n        \n        # 步驟6: 發送圖片檔案到頻道\n        await ctx.send(file=file)\n        \n    except Exception as e:\n        print(f\"❌ 發送圖片時發生錯誤: {e}\")\n        raise e\n```"
   },
   
   "ai_image_embed": {
@@ -107,5 +112,40 @@
   "ai_image_webhook": {
     "ch_comment": "生成圖片並用 webhook 發送",
     "content": "# AI 圖片生成（Webhook）\n生成圖片並使用 webhook 發送。\n```python\nasync def create_webhook_byteIO(ctx, *, webhook_name, webhook_avatar_buffer):\n    # 創建帶有圖片頭像的 webhook\n    webhook = await ctx.channel.create_webhook(\n        name=webhook_name, \n        avatar=webhook_avatar_buffer.read()\n    )\n    return webhook\n\n@bot.command()\nasync def webhook_send(ctx, *, prompt):\n    # 生成圖片\n    buffer = await generate_picture_byteIO(prompt)\n    # 創建 webhook\n    webhook = await create_webhook_byteIO(ctx, \"test\", buffer)\n    # 發送訊息\n    await webhook.send(\"你好世界\")\n```"
+  },
+
+  "bot_intents_setup": {
+    "ch_comment": "機器人權限設定",
+    "content": "# 機器人權限設定\n設定機器人的 intents 權限和指令前綴。\n```python\nimport discord\nfrom discord.ext import commands\n\n# 設定機器人權限 - 可以接收所有事件\nintents = discord.Intents.all()\n\n# 建立機器人實例，指令前綴是 \"?\"\nbot = commands.Bot(intents=intents, command_prefix=\"?\")\n```"
+  },
+
+  "datetime_basic": {
+    "ch_comment": "datetime 基本用法",
+    "content": "# datetime 基本用法\n學習 Python datetime 模組的基本操作。\n```python\nimport datetime\n\n# 1. 取得現在時間\nnow = datetime.datetime.now()\nprint(now)  # 2025-01-15 14:30:25.123456\n\n# 2. 取得今天日期\ntoday = datetime.date.today()\nprint(today)  # 2025-01-15\n\n# 3. 建立特定日期時間\nspecific_time = datetime.datetime(2025, 1, 15, 14, 30, 0)\nprint(specific_time)  # 2025-01-15 14:30:00\n\n# 4. 建立特定日期\nspecific_date = datetime.date(2025, 1, 15)\nprint(specific_date)  # 2025-01-15\n\n# 5. 取得時間的各個部分\nprint(now.year)    # 年份：2025\nprint(now.month)   # 月份：1\nprint(now.day)     # 日期：15\nprint(now.hour)    # 小時：14\nprint(now.minute)  # 分鐘：30\nprint(now.second)  # 秒數：25\n```"
+  },
+
+  "datetime_formatting": {
+    "ch_comment": "datetime 格式化",
+    "content": "# datetime 格式化\n將 datetime 物件轉換為字串格式。\n```python\nimport datetime\n\nnow = datetime.datetime.now()\n\n# 常用格式化方式\nprint(now.strftime('%Y-%m-%d'))           # 2025-01-15\nprint(now.strftime('%H:%M:%S'))           # 14:30:25\nprint(now.strftime('%Y-%m-%d %H:%M:%S'))  # 2025-01-15 14:30:25\nprint(now.strftime('%Y年%m月%d日'))         # 2025年01月15日\nprint(now.strftime('%A, %B %d, %Y'))     # Wednesday, January 15, 2025\n\n# 格式化代碼說明：\n# %Y - 四位數年份\n# %m - 月份（01-12）\n# %d - 日期（01-31）\n# %H - 小時（00-23）\n# %M - 分鐘（00-59）\n# %S - 秒數（00-59）\n# %A - 完整星期名稱\n# %B - 完整月份名稱\n```"
+  },
+
+  "datetime_operations": {
+    "ch_comment": "datetime 運算操作",
+    "content": "# datetime 運算操作\n對日期時間進行加減運算。\n```python\nimport datetime\n\nnow = datetime.datetime.now()\n\n# 使用 timedelta 進行時間運算\n# 加法運算\nfuture_time = now + datetime.timedelta(days=7)        # 7天後\nfuture_time = now + datetime.timedelta(hours=3)       # 3小時後\nfuture_time = now + datetime.timedelta(minutes=30)    # 30分鐘後\nfuture_time = now + datetime.timedelta(seconds=45)    # 45秒後\n\n# 減法運算\npast_time = now - datetime.timedelta(days=5)          # 5天前\npast_time = now - datetime.timedelta(hours=2)         # 2小時前\n\n# 複合運算\ncomplex_time = now + datetime.timedelta(days=3, hours=5, minutes=30)\nprint(complex_time)  # 3天5小時30分鐘後\n\n# 計算兩個時間的差距\ntime1 = datetime.datetime(2025, 1, 15, 10, 0, 0)\ntime2 = datetime.datetime(2025, 1, 20, 15, 30, 0)\ndifference = time2 - time1\nprint(difference)      # 5 days, 5:30:00\nprint(difference.days) # 5 (天數)\nprint(difference.seconds) # 19800 (秒數)\n```"
+  },
+
+  "datetime_comparison": {
+    "ch_comment": "datetime 比較操作",
+    "content": "# datetime 比較操作\n比較不同的日期時間。\n```python\nimport datetime\n\n# 建立幾個時間點\ntime1 = datetime.datetime(2025, 1, 15, 10, 0, 0)\ntime2 = datetime.datetime(2025, 1, 15, 14, 0, 0)\ntime3 = datetime.datetime(2025, 1, 20, 10, 0, 0)\nnow = datetime.datetime.now()\n\n# 比較運算\nprint(time1 < time2)   # True (time1 較早)\nprint(time2 > time1)   # True (time2 較晚)\nprint(time1 == time1)  # True (相等)\nprint(time1 != time2)  # True (不相等)\n\n# 實用比較\nif now > time1:\n    print(\"現在時間已經過了 time1\")\n\nif time3 > now:\n    print(\"time3 還沒到\")\n\n# 找出最早和最晚的時間\ntimes = [time1, time2, time3, now]\nearliest = min(times)\nlatest = max(times)\nprint(f\"最早：{earliest}\")\nprint(f\"最晚：{latest}\")\n```"
+  },
+
+  "random_basic": {
+    "ch_comment": "random 基本用法",
+    "content": "# random 基本用法\n學習 Python random 模組的基本操作。\n```python\nimport random\n\n# 1. 產生隨機整數\nrandom_int = random.randint(1, 10)      # 1到10之間的整數\nprint(random_int)  # 例如：7\n\nrandom_range = random.randrange(0, 100, 5)  # 0到100，間隔5\nprint(random_range)  # 例如：45\n\n# 2. 產生隨機浮點數\nrandom_float = random.random()          # 0.0到1.0之間\nprint(random_float)  # 例如：0.7234567\n\nrandom_uniform = random.uniform(1.5, 10.5)  # 1.5到10.5之間\nprint(random_uniform)  # 例如：6.789\n\n# 3. 從清單中隨機選擇\ncolors = ['紅色', '藍色', '綠色', '黃色']\nrandom_color = random.choice(colors)\nprint(random_color)  # 例如：藍色\n\n# 4. 隨機重新排列清單\nnumbers = [1, 2, 3, 4, 5]\nrandom.shuffle(numbers)  # 直接修改原清單\nprint(numbers)  # 例如：[3, 1, 5, 2, 4]\n\n# 5. 隨機抽樣（不重複）\nfruits = ['蘋果', '香蕉', '橘子', '葡萄', '草莓']\nsample = random.sample(fruits, 3)  # 隨機選3個\nprint(sample)  # 例如：['橘子', '蘋果', '草莓']\n```"
+  },
+
+  "bot_get_channel": {
+    "ch_comment": "取得頻道物件",
+    "content": "# 取得頻道物件\n透過頻道 ID 取得頻道物件並發送訊息。\n```python\n# 取得寵物所在的頻道\nchannel = bot.get_channel(pet[\"channel_id\"])\n\n# 直接向頻道發送訊息\nawait channel.send(\"Hello!\")\n```"
   }
 }
