@@ -48,7 +48,6 @@ class EasterEgg(commands.Cog):
 				)
 				await message.delete()
 				return
-			print([role.name for role in message.author.roles])
 			flag_info = self.flags_data[message.content]
 			flag_id = flag_info["id"]
 			user_id = message.author.id
