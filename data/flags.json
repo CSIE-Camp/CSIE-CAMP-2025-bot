@@ -6,7 +6,7 @@
 "flag{||8a7264ea1da93415666491187670fa||}": {"狀態": "已使用", "id": 5, "flag": "flag{||8a7264ea1da93415666491187670fa||}", "amount": 3.0, "name": "讀我"},
 "flag{||c157628198877cb96985ddddd2beb1||}": {"狀態": "已使用", "id": 6, "flag": "flag{||c157628198877cb96985ddddd2beb1||}", "amount": 3.0, "name": "歡迎光臨"},
 "flag{||3a09986f13508c7301692eb94a4dce||}": {"狀態": "已使用", "id": 9, "flag": "flag{||3a09986f13508c7301692eb94a4dce||}", "amount": 3.0, "name": "誰會想在~~凌晨~~三點吃美味蟹堡？"},
-"flag{||0c371a2a4d311b552963dddf78af59||}": {"狀態": "準備中", "id": 14, "flag": "flag{||0c371a2a4d311b552963dddf78af59||}", "amount": 3.0, "name": "今天我生日"},
+"flag{||0c371a2a4d311b552963dddf78af59||}": {"狀態": "已使用", "id": 14, "flag": "flag{||0c371a2a4d311b552963dddf78af59||}", "amount": 3.0, "name": "今天我生日"},
 "flag{||5a00a18aa92ca1924460883b011ade||}": {"狀態": "已使用", "id": 18, "flag": "flag{||5a00a18aa92ca1924460883b011ade||}", "amount": 3.0, "name": "三二一鋼鐵人"},
 "flag{||4337c117221c114a905228198d2eea||}": {"狀態": "已使用", "id": 22, "flag": "flag{||4337c117221c114a905228198d2eea||}", "amount": 3.0, "name": "原來這裡還有人"},
 "flag{||Wh@tDo3$TheF0x$ay||}": {"狀態": "已使用", "id": 31, "flag": "flag{||Wh@tDo3$TheF0x$ay||}", "amount": 3.0, "name": "你說什麼？狐狸是狼？！！"},
@@ -16,5 +16,6 @@
 "flag{||I_am_watching||}": {"狀態": "已使用", "id": 35, "flag": "flag{||I_am_watching||}", "amount": 3.0, "name": "舉頭三尺有神明"},
 "flag{||u_should_NOT_pas$||}": {"狀態": "已使用", "id": 36, "flag": "flag{||u_should_NOT_pas$||}", "amount": 3.0, "name": "Stuff Only"},
 "flag{||SupeR_$up@u||}": {"狀態": "已使用", "id": 37, "flag": "flag{||SupeR_$up@u||}", "amount": 8.0, "name": "這是道具，禁止飲用"},
-"flag{||L!ttLe_5_wo1f||}": {"狀態": "已使用", "id": 38, "flag": "flag{||L!ttLe_5_wo1f||}", "amount": 3.0, "name": "足以昏厥大象的針"}
+"flag{||L!ttLe_5_wo1f||}": {"狀態": "已使用", "id": 38, "flag": "flag{||L!ttLe_5_wo1f||}", "amount": 3.0, "name": "足以昏厥大象的針"},
+"flag{||1Truth||}": {"狀態": "已使用", "id": 39, "flag": "flag{||1Truth||}", "amount": 3.0, "name": "真相只有一個"}
 }

@@ -30,16 +30,16 @@ class Schedule(commands.Cog):
 
 	def _get_fancy_reply(self, lesson_name, remaining_minutes, now):
 		"""根據目前課程、剩餘時間和當前時間生成一個有趣的額外回覆。"""
-		additional_messages = []
+		additional_messages: list[str] = []
 		if now.hour == 3:
-			additional_messages = [
+			additional_messages += [
 				"誰會想在凌晨三點找 flag ？"
 			]
 		if now.hour < 3 or now.hour >= 22:
-			additional_messages = [
+			additional_messages += [
 				"現在是凌晨耶:O，快去睡覺",
 				"~~這麼爆肝，很有成為工程師的潛力喔~~",
-				"你...怎麼那麼晚還在想我(/////)",
+				"你...怎麼那麼晚還在想我(///u///)",
 			]
 
 		if lesson_name == "報到":
@@ -111,8 +111,8 @@ class Schedule(commands.Cog):
 				)
 				return
 
-		current_lesson = None
-		next_lesson = None
+		current_lesson: Lesson = None
+		next_lesson: Lesson = None
 
 		for i, lesson in enumerate(self.lessons):
 			if lesson.time > now:
@@ -123,7 +123,7 @@ class Schedule(commands.Cog):
 		else:
 			current_lesson = self.lessons[-1]
 
-		embed = None
+		embed: discord.Embed = None
 		fancy_reply = None
 		remaining_minutes = 0
 
@@ -161,7 +161,10 @@ class Schedule(commands.Cog):
 				title="課表查詢", description="營隊還沒開始喔！", color=0xFF0000
 			)
 
-		await interaction.response.send_message(embed=embed)
+		await interaction.response.send_message(
+			embed = embed,
+			ephemeral = True
+		)
 		if fancy_reply:
 			await interaction.followup.send(fancy_reply)
 		if now.hour == 15:
@@ -177,7 +180,7 @@ class Schedule(commands.Cog):
 	):
 		now = datetime.datetime.now()
 		embed = discord.Embed(title="今日完整流程", color=0x00FF00)
-		date = datetime.date(2025, 7, 1)
+		date = now.date()
 		schedule = ""
 		for lesson in self.lessons:
 			if lesson.time.date() != date:
@@ -190,6 +193,13 @@ class Schedule(commands.Cog):
 			embed.add_field(
 				name = date.strftime("%m / %d 流程"),
 				value = schedule,
+				inline = False
+			)
+		else:
+			embed.color = 0xFF0000
+			embed.add_field(
+				name = date.strftime("%m / %d"),
+				value = '營隊還沒有開始欸 Ouo',
 				inline = False
 			)
 
