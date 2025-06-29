@@ -333,6 +333,24 @@ class General(commands.Cog):
         # 僅自己可見
         await ctx.send(embed=embed, ephemeral=True)
 
+    @app_commands.command(name = "rear_room_manual", description = "顯示 7/3 相關內容")
+    async def _rear_room_link(self, interaction: discord.Interaction):
+        date = datetime.datetime.today()
+        if date < datetime.datetime(2025, 7, 3, 19, 0):
+            embed = discord.Embed(title = "時候還沒到喔！", color = 0xFF0000)
+            embed.add_field(
+                name = "⚠ 禁止暴雷 ⚠",
+                value = "還想要偷看呀！",
+                inline = False
+            )
+        else:
+            embed = discord.Embed(title = "遊戲介紹")
+            embed.add_field(
+                name = "手冊連結",
+                value = "[【點我！！】](https://drive.google.com/file/d/10gHC5_721gVMX4exWC0NVeLNwWw243TA/view?usp=drivesdk)",
+                inline = False
+            )
+        await interaction.response.send_message(embed = embed, ephemeral = True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))
