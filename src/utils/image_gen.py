@@ -10,6 +10,9 @@ import requests
 from gradio_client import Client
 from src import config
 
+from .prompt import LLM_GEN_IMAGE_PROMPT
+from .llm import llm_model
+
 
 async def generate_image(prompt: str) -> Optional[BytesIO]:
     """
@@ -26,9 +29,20 @@ async def generate_image(prompt: str) -> Optional[BytesIO]:
         if not _validate_config():
             return None
 
+        # 先經過 LLM 進行 prompt 調整，再進行 format 注入
+        gen_prompt = prompt
+        if llm_model is not None:
+            try:
+                llm_response = await _call_llm_for_image_prompt(prompt)
+                if llm_response:
+                    gen_prompt = llm_response
+            except Exception as e:
+                print(f"⚠️ LLM prompt 轉換失敗，將使用原始 prompt: {e}")
+        print(f"🖼️ 生成圖片的 prompt: {gen_prompt}")
+
         # 建立客戶端並生成圖片
         client = _create_client()
-        result = client.predict(prompt)
+        result = client.predict(gen_prompt)
 
         if result is None:
             print("❌ 無法連接到圖片生成服務")
@@ -43,6 +57,28 @@ async def generate_image(prompt: str) -> Optional[BytesIO]:
     except (ValueError, AttributeError) as e:
         _handle_api_error(str(e))
         return None
+
+
+# LLM prompt 轉換輔助函式
+import asyncio
+
+
+async def _call_llm_for_image_prompt(user_prompt: str) -> Optional[str]:
+    """
+    使用 LLM 將使用者輸入轉換為適合圖片生成的 prompt。
+    """
+    if llm_model is None:
+        return None
+    # Gemini API 目前僅同步，需用執行緒 offload
+    loop = asyncio.get_event_loop()
+
+    def sync_llm():
+        # 使用和主流程一致的 prompt 格式
+        prompt = LLM_GEN_IMAGE_PROMPT.format(user_prompt=user_prompt)
+        response = llm_model.generate_content(prompt)
+        return response.text.strip() if hasattr(response, "text") else str(response)
+
+    return await loop.run_in_executor(None, sync_llm)
 
 
 def _validate_config() -> None:

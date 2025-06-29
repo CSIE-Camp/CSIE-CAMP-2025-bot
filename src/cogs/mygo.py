@@ -10,7 +10,7 @@ import random
 import json
 from types import SimpleNamespace
 
-from src import config
+from src.utils.prompt import MYGO_QUOTE_SIMILAR_PROMPT, MYGO_CHARACTER_GEN_PROMPT
 from src.utils.llm import llm_model
 from src.constants import MYGO_FILE
 
@@ -140,8 +140,9 @@ class MyGo(commands.Cog):
                         )
 
                     quotes_str = "\n".join(self.mygo_quotes)
-                    prompt1 = f"從以下《MyGO!!!!!》的台詞列表中，選出與使用者輸入的「{keyword}」語意最接近或最相關的一句台詞。請「只」回傳那句台詞，不要包含任何其他文字或引號。\n\n台詞列表：\n{quotes_str}"
-
+                    prompt1 = MYGO_QUOTE_SIMILAR_PROMPT.format(
+                        keyword=keyword, quotes_str=quotes_str
+                    )
                     closest_quote_response = await self.model.generate_content_async(
                         prompt1
                     )
@@ -168,7 +169,7 @@ class MyGo(commands.Cog):
                             status_message,
                             f"還是找不到「{keyword}」的相關圖片，讓我想想... 🤔",
                         )
-                    prompt2 = f"「{keyword}」這句話聽起來像是 MyGO!!!!! 裡的哪個角色會說的台詞？請你扮演那個角色，並用該角色的口吻，生成一句全新的、風格相似的台詞。"
+                    prompt2 = MYGO_CHARACTER_GEN_PROMPT.format(keyword=keyword)
                     llm_response = await self.model.generate_content_async(prompt2)
                     if status_message:
                         await edit_message(

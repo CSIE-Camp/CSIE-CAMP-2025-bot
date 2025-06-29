@@ -36,9 +36,9 @@ class General(commands.Cog):
         self.bot = bot
         try:
             with open(LINKS_FILE, "r", encoding="utf-8") as f:
-                self.links = json.load(f)
+                self.link_list = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
-            self.links = []
+            self.link_list = []
 
     @app_commands.command(
         name="profile", description="查詢用戶的等級、經驗值和金錢資料"
@@ -116,7 +116,7 @@ class General(commands.Cog):
             description="以下是本次資工營的相關連結，歡迎多加利用！",
             color=Colors.INFO,
         )
-        for link in self.links:
+        for link in self.link_list:
             embed.add_field(
                 name=link["name"],
                 value=link["value"],

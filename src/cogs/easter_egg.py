@@ -6,7 +6,7 @@ import datetime
 from src import config
 from src.utils.user_data import user_data_manager
 from src.constants import Colors, FLAGS_FILE
-import pandas as pd
+
 
 class EasterEgg(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -14,7 +14,7 @@ class EasterEgg(commands.Cog):
         self.flags_data = self.load_flags_data()
         self.user_data = user_data_manager
 
-    def load_flags_data(self) -> dict[str, dict[str, ]]:
+    def load_flags_data(self) -> dict[str, dict[str,]]:
         with open(FLAGS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     
