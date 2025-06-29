@@ -67,7 +67,7 @@ class EasterEgg(commands.Cog):
                     )
                     embed.set_thumbnail(url=message.author.display_avatar.url)
                     embed.add_field(
-                        name="彩蛋名稱", value=f"`{flag_info['name']}`", inline=False
+                        name="彩蛋名稱", value=f"{flag_info['name']}", inline=False
                     )
                     embed.add_field(
                         name="尋獲成就",

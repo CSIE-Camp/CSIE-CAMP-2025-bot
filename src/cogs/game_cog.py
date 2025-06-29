@@ -59,8 +59,11 @@ class Games(commands.Cog):
         result_str, winnings, msg, max_count = slot_game(user, amount, symbols)
         user["money"] += winnings
         await user_data_manager.update_user_data(interaction.user.id, user)
+        user_name = interaction.user.display_name
+        if max_count > 3:
+            user_name = interaction.user.mention
         await interaction.followup.send(
-            f"# {result_str}\n{interaction.user.mention} {msg}", ephemeral=True
+            f"# {result_str}\n{user_name} {msg}", ephemeral=True
         )
         await achievement_manager.check_slot_achievements(
             interaction.user.id, max_count, interaction
