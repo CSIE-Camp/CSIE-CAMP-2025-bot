@@ -18,43 +18,22 @@ class EasterEgg(commands.Cog):
         with open(FLAGS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    @app_commands.command(name="ls", description="???")
-    async def ls(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True, ephemeral=True)
-
-        await interaction.followup.send(
-            "```sh\n$ ls\nTOTAL 1 FILE(S)\nkajsdlifjawoiefjsjcavlkasjdlfkjlk.txt\n```"
-        )
-
-    @app_commands.command(name="cat", description="???")
-    @app_commands.describe(file="FILE")
-    async def cat(self, interaction: discord.Interaction, file: str):
-        await interaction.response.defer(thinking=True, ephemeral=True)
-
-        if file == "kajsdlifjawoiefjsjcavlkasjdlfkjlk.txt":
-            await interaction.followup.send(
-                f"(*NOT IMPLEMENTED*)\n```sh\n$ cat {file}\nflag{{||5c1291bf52f7784ebb250c70b67fa3||}}\n```"
-            )
-        else:
-            await interaction.followup.send(
-                f"\n```\n$ cat {file}\n```\ncat: {file} No such file or directory"
-            )
-
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
             return
+
         if message.content in self.flags_data:
             if not any(
-                role.name in ["新身分", "公測玩家"] for role in message.author.roles
+                role.id in config.PLAYER_ROLE_IDS for role in message.author.roles
             ):
                 await message.author.send(
-                    f"{message.author.mention} 只有「公測玩家」可以找彩蛋喔！",
+                    f"{message.author.mention} 只有指定身份組可以找彩蛋喔！",
                     delete_after=5,
                 )
                 await message.delete()
                 return
-            print([role.name for role in message.author.roles])
+
             flag_info = self.flags_data[message.content]
             flag_id = flag_info["id"]
             user_id = message.author.id
@@ -118,6 +97,19 @@ class EasterEgg(commands.Cog):
                     f"{message.author.mention} 這個彩蛋已經被找到了，下次請早！",
                     delete_after=5,
                 )
+                return
+
+        if not self.bot.user:
+            print("[⚠ Warning] Not logged in")
+            return
+        if not message.mentions:
+            return
+        if self.bot.user not in message.mentions:
+            return
+        if "生日快樂" in message.content or "happy birthday" in message.content.lower():
+            await message.author.send("`flag{||0c371a2a4d311b552963dddf78af59||}`")
+            return
+        return
 
     @app_commands.command(name="egg", description="查詢自己找到的彩蛋。")
     async def my_egg(self, interaction: discord.Interaction):
@@ -156,6 +148,14 @@ class EasterEgg(commands.Cog):
             text=f"已找到 {len(found_flags_ids)} / {len(self.flags_data)} 個彩蛋"
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="ls", description="???")
+    async def ls(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
+        await interaction.followup.send(
+            "```sh\n$ ls\nTOTAL 1 FILE(S)\nkajsdlifjawoiefjsjcavlkasjdlfkjlk.txt\n```"
+        )
 
 
 async def setup(bot: commands.Bot):

@@ -19,6 +19,11 @@ def get_int_env(key: str) -> Optional[int]:
 
 # ===== 基本設定 =====
 ADMIN_ROLE_ID = get_int_env("ADMIN_ROLE_ID")
+PLAYER_ROLE_IDS = [
+    int(role_id)
+    for role_id in os.getenv("PLAYER_ROLE_IDS", "").split(",")
+    if role_id.strip().isdigit()
+]
 
 # ===== API Keys =====
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
