@@ -22,7 +22,7 @@ class EasterEgg(commands.Cog):
 	async def ls(self, interaction: discord.Interaction):
 		await interaction.response.defer(thinking = True, ephemeral = True)
 
-		await interaction.followup.send("```sh\n$ ls\nTOTAL 1 FILE(S)\nkajsdlifjawoiefjsjcavlkasjdlfkjlk.txt\n```")
+		await interaction.followup.send("```sh\n$ ls\nTOTAL 1 FILE(S)```\n`kajsdlifjawoiefjsjcavlkasjdlfkjlk.txt`\n")
 
 	@app_commands.command(name="cat", description="???")
 	@app_commands.describe(file="FILE")
@@ -30,7 +30,7 @@ class EasterEgg(commands.Cog):
 		await interaction.response.defer(thinking = True, ephemeral = True)
 
 		if file == "kajsdlifjawoiefjsjcavlkasjdlfkjlk.txt":
-			await interaction.followup.send(f"(*NOT IMPLEMENTED*)\n```sh\n$ cat {file}\nflag{{||5c1291bf52f7784ebb250c70b67fa3||}}\n```")
+			await interaction.followup.send(f"(*NOT IMPLEMENTED*)\n```sh\n$ cat {file}```\n`flag{{||5c1291bf52f7784ebb250c70b67fa3||}}`\n")
 		else:
 			await interaction.followup.send(f"\n```\n$ cat {file}\n```\ncat: {file} No such file or directory")
 
