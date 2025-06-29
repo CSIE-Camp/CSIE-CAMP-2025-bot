@@ -29,7 +29,10 @@ class Schedule(commands.Cog):
     def _get_fancy_reply(self, lesson_name, remaining_minutes, now):
         """根據目前課程、剩餘時間和當前時間生成一個有趣的額外回覆。"""
         additional_messages = []
-
+        if now.hour == 3:
+            additional_messages = [
+                "誰會想在凌晨三點找 flag ？"
+            ]
         if now.hour < 3 or now.hour >= 22:
             additional_messages = [
                 "現在是凌晨耶:O，快去睡覺",
@@ -90,12 +93,12 @@ class Schedule(commands.Cog):
     @app_commands.command(
         name="schedule", description="查詢目前課程、剩餘時間、下個課程。"
     )
-    @app_commands.describe(custom_time="要查詢的自訂時間(格式: mmddHHMM)")
     async def query_schedule(
-        self, interaction: discord.Interaction, custom_time: str = None
+        self, interaction: discord.Interaction
     ):
         """查詢目前課程、剩餘時間、下個課程。可選填 mmddHHMM 格式的自訂時間。"""
         now = datetime.datetime.now()
+        custom_time = None
         if custom_time:
             try:
                 now = datetime.datetime.strptime(custom_time, "%m%d%H%M")
@@ -155,7 +158,39 @@ class Schedule(commands.Cog):
         await interaction.response.send_message(embed=embed)
         if fancy_reply:
             await interaction.followup.send(fancy_reply)
+        if now.hour == 15:
+            await interaction.user.send(
+                "`flag{||3a09986f13508c7301692eb94a4dce||}`"
+            )
 
+    @app_commands.command(
+        name="daily", description="查詢今日完整流程。"
+    )
+    async def query_daily_schedule(
+        self, interaction: discord.Interaction
+    ):
+        now = datetime.datetime.now()
+        embed = discord.Embed(title="今日完整流程", color=0x00FF00)
+        date = datetime.date(2025,7,1)
+        for lesson in self.lessons:
+            if lesson["time"].date() != date:
+                continue
+            lesson_time = lesson["time"].replace(year=now.year)
+            embed.add_field(
+                name=lesson["name"],
+                value=lesson_time.strftime("%H:%M"),
+                inline=False
+            )
+
+        footer_contents = [
+            "NTNU CSIE Camp 2025",
+            "BTW 今天我生日:D",
+            "詳請請洽官網 / 手冊查看四天課表！",
+            "使用 /schedule 查詢當前時段課程。"
+        ]
+        footer_content = random.choice(footer_contents)
+        embed.set_footer(text=footer_content)
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Schedule(bot))
