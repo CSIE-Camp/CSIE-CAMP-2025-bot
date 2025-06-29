@@ -48,7 +48,6 @@ class DailyCheckin(commands.Cog):
         每日簽到抽籤功能。
         用戶簽到後會自動抽取今日運勢，並根據運勢等級獲得不同的金錢獎勵。
         """
-        # await interaction.response.defer(thinking=True)
 
         user_id = interaction.user.id
         today = datetime.date.today()
@@ -192,6 +191,7 @@ class DailyCheckin(commands.Cog):
             )
         except (AttributeError, KeyError) as e:
             print(f"⚠️ 檢查成就時出錯: {e}")
+
 
 async def setup(bot: commands.Bot):
     """設置函數，用於將此 Cog 加入到 bot 中。"""
