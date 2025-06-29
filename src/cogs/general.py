@@ -40,15 +40,13 @@ class General(commands.Cog):
         except (FileNotFoundError, json.JSONDecodeError):
             self.link_list = []
 
-    @app_commands.command(
-        name="profile", description="查詢用戶的等級、經驗值和金錢資料"
-    )
-    @app_commands.describe(member="要查詢的成員")
-    async def profile(
-        self, interaction: discord.Interaction, member: Optional[discord.Member] = None
-    ):
-        """查詢用戶的等級、經驗值和金錢資料"""
-        target = member or interaction.user
+    @app_commands.command(name="profile", description="查詢你的等級、經驗值和金錢資料")
+    async def profile(self, interaction: discord.Interaction):
+        """查詢用戶的等級、經驗值和金錢資料
+        一般使用者只能查自己，管理員可查詢任何人
+        """
+        # 只能查自己
+        target = interaction.user
 
         await interaction.response.defer(thinking=True)
         user_data = await user_data_manager.get_user(target)
@@ -57,15 +55,66 @@ class General(commands.Cog):
         level = user_data.get("lv", DEFAULT_LEVEL)
         exp = user_data.get("exp", DEFAULT_EXP)
         money = user_data.get("money", DEFAULT_MONEY)
+        achievements = user_data.get("achievements", [])
+        found_flags = user_data.get("found_flags", [])
+        sign_in_streak = user_data.get("sign_in_streak", 0)
+        nickname = target.nick if target.nick else target.display_name
 
         # 計算經驗值進度
         required_exp = self._calculate_required_exp(level)
         progress = min(exp / required_exp, 1.0)
         progress_bar = self._create_progress_bar(progress)
+        exp_to_next = max(required_exp - exp, 0)
+
+        # 取得所有用戶資料以計算排名
+        all_user_data = user_data_manager.users
+        user_list = list(all_user_data.values())
+        # 等級排名
+        sorted_by_level = sorted(
+            user_list, key=lambda u: (-u.get("lv", 0), -u.get("exp", 0))
+        )
+        level_total = len(sorted_by_level)
+        level_rank = next(
+            (
+                i + 1
+                for i, u in enumerate(sorted_by_level)
+                if u.get("name") == user_data.get("name")
+            ),
+            None,
+        )
+        # 金錢排名
+        sorted_by_money = sorted(user_list, key=lambda u: -u.get("money", 0))
+        money_total = len(sorted_by_money)
+        money_rank = next(
+            (
+                i + 1
+                for i, u in enumerate(sorted_by_money)
+                if u.get("name") == user_data.get("name")
+            ),
+            None,
+        )
+
+        # 成就與彩蛋數
+        achievements_count = len(achievements)
+        found_flags_count = len(found_flags)
 
         # 建立資料嵌入
         embed = self._create_profile_embed(
-            target, level, exp, required_exp, money, progress_bar
+            target,
+            level,
+            exp,
+            required_exp,
+            money,
+            progress_bar,
+            nickname=nickname,
+            exp_to_next=exp_to_next,
+            level_rank=level_rank,
+            level_total=level_total,
+            money_rank=money_rank,
+            money_total=money_total,
+            achievements_count=achievements_count,
+            found_flags_count=found_flags_count,
+            sign_in_streak=sign_in_streak,
         )
 
         await interaction.followup.send(embed=embed)
@@ -91,21 +140,71 @@ class General(commands.Cog):
         required_exp: int,
         money: int,
         progress_bar: str,
+        nickname: str = None,
+        exp_to_next: int = None,
+        level_rank: int = None,
+        level_total: int = None,
+        money_rank: int = None,
+        money_total: int = None,
+        achievements_count: int = None,
+        found_flags_count: int = None,
+        sign_in_streak: int = None,
     ) -> discord.Embed:
-        """建立個人資料的嵌入訊息"""
+        """建立個人資料的嵌入訊息，含更多統計"""
         embed = discord.Embed(
             title=f"✨ {user.display_name} 的個人資料",
             color=user.color,
         )
         embed.set_thumbnail(url=user.avatar.url)
-        embed.add_field(name="**等級**", value=f"`{level}`", inline=True)
-        embed.add_field(name="**金錢**", value=f"`{money}` 元", inline=True)
+
+        # ── 基本資料 ──
+        basic_info = f"暱稱：{nickname}\n金錢：{money} 元"
+        embed.add_field(name="👤 基本資料", value=basic_info, inline=False)
+
+        # ── 等級／經驗值 ──
+        level_exp_info = (
+            f"等級：{level}\n經驗值：{exp} / {required_exp}\n{progress_bar}"
+        )
         embed.add_field(
-            name="**經驗值**",
-            value=f"`{exp} / {required_exp}`",
+            name="⭐ 等級／經驗值",
+            value=level_exp_info,
             inline=False,
         )
-        embed.add_field(name="**進度**", value=f"`{progress_bar}`", inline=False)
+
+        # ── 排名、成就、彩蛋、連續簽到合併顯示 ──
+        info_lines = []
+        rank_line = None
+        if (
+            level_rank is not None
+            and level_total is not None
+            and money_rank is not None
+            and money_total is not None
+        ):
+            rank_line = f"🏅 等級排名 #{level_rank}/{level_total}｜💰 金錢排名 #{money_rank}/{money_total}"
+        elif level_rank is not None and level_total is not None:
+            rank_line = f"🏅 等級排名 #{level_rank}/{level_total}"
+        elif money_rank is not None and money_total is not None:
+            rank_line = f"💰 金錢排名 #{money_rank}/{money_total}"
+        if rank_line:
+            info_lines.append(rank_line)
+
+        if achievements_count is not None and found_flags_count is not None:
+            info_lines.append(
+                f"🏆 獲得成就 {achievements_count}｜🥚 獲得彩蛋 {found_flags_count}"
+            )
+        elif achievements_count is not None:
+            info_lines.append(f"🏆 獲得成就 {achievements_count}")
+        elif found_flags_count is not None:
+            info_lines.append(f"🥚 獲得彩蛋 {found_flags_count}")
+
+        if sign_in_streak is not None:
+            info_lines.append(f"📅 連續簽到 {sign_in_streak}")
+
+        if info_lines:
+            embed.add_field(
+                name="📊 其他資訊", value="\n".join(info_lines), inline=False
+            )
+
         return embed
 
     @app_commands.command(name="links", description="顯示營隊相關連結")
