@@ -17,7 +17,7 @@ from io import BytesIO
 from src.utils.user_data import user_data_manager
 from src.utils.achievements import achievement_manager
 from src.utils.image_gen import generate_image
-from src.constants import Colors, FORTUNE_LEVELS, QUOTE_REPLACEMENTS, ACG_QUOTES_FILE
+from src.constants import FORTUNE_LEVELS, QUOTE_REPLACEMENTS, ACG_QUOTES_FILE
 from src import config
 
 
