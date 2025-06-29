@@ -79,7 +79,6 @@ class EasterEgg(commands.Cog):
             )
 
             if found_count < flag_info["amount"]:
-                await message.delete()
 
                 user.setdefault("found_flags", []).append(flag_id)
                 await self.user_data.update_user_data(user_id, user)
@@ -114,12 +113,12 @@ class EasterEgg(commands.Cog):
                     await announcement_channel.send(embed=embed)
 
             else:
-                await message.delete()
                 await message.author.send(
                     f"{message.author.mention} 這個彩蛋已經被找到了，下次請早！",
                     delete_after=5,
                 )
-                return
+            await message.delete()
+            return
 
         if not self.bot.user:
             print("[⚠ Warning] Not logged in")
