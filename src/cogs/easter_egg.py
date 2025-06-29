@@ -17,7 +17,26 @@ class EasterEgg(commands.Cog):
     def load_flags_data(self) -> dict[str, dict[str,]]:
         with open(FLAGS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
+    
+    @app_commands.command(name="ls", description="???")
+    async def ls(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True)
 
+        await interaction.followup.send("```\n$ ls\n```\nTOTAL 1 FILE(S)\nkajsdlifjawoiefjsjcavlkasjdlfkjlk.txt\n")
+
+    @app_commands.command(name="cat", description="???")
+    @app_commands.describe(file="FILE")
+    async def cat(self, interaction: discord.Interaction, file: str):
+        await interaction.response.defer(thinking=True)
+
+        
+        if file == "kajsdlifjawoiefjsjcavlkasjdlfkjlk.txt":
+            await interaction.followup.send(f"(*NOT IMPLEMENTED*)\n```\n$ cat {file}\n```\nflag{{||asijjdfoiasjdoifjasodifjaisldjkl||}}")
+        else:
+            await interaction.followup.send(f"\n```\n$ cat {file}\n```\ncat: {file} No such file or directory")
+
+
+    
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
