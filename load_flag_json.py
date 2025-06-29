@@ -17,5 +17,6 @@ with open('data/flags.json', 'w', encoding='utf-8') as f:
     for idx, (key, value) in enumerate(temp.items()):
         if idx != 0:
             f.write(',\n')
-        f.write(f'    "{key}": {value.__repr__().replace("'", '"')}')
+        content = str(value).replace("'", '"')
+        f.write(f'"{key}": {content}')
     f.write('\n}\n')
