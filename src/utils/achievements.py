@@ -138,7 +138,7 @@ class AchievementManager:
         """檢查拉霸相關成就"""
         if max_count == 5:
             await AchievementManager.check_and_award_achievement(
-                user_id, "slot_jackpot", ctx
+                user_id, "slot_god", ctx
             )
         elif max_count == 4:
             await AchievementManager.check_and_award_achievement(
@@ -148,7 +148,7 @@ class AchievementManager:
     @staticmethod
     async def check_debt_achievements(user_id: int, debt_count: int, ctx=None):
         """檢查欠債相關成就"""
-        if debt_count >= 20:
+        if debt_count >= 10:
             await AchievementManager.check_and_award_achievement(
                 user_id, "kong_yiji", ctx
             )

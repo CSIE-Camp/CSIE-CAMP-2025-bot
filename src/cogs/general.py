@@ -43,14 +43,15 @@ class General(commands.Cog):
             self.link_list = []
 
     @app_commands.command(name="profile", description="查詢你的等級、經驗值和金錢資料")
-    async def profile(self, interaction: discord.Interaction):
+    @app_commands.describe(show="讓所有人都看到你的個人資料")
+    async def profile(self, interaction: discord.Interaction, show: bool = False):
         """查詢用戶的等級、經驗值和金錢資料
         一般使用者只能查自己，管理員可查詢任何人
         """
         # 只能查自己
         target = interaction.user
-
-        await interaction.response.defer(thinking=True, ephemeral=True)
+        ephemeral = not show
+        await interaction.response.defer(thinking=True, ephemeral=ephemeral)
         user_data = await user_data_manager.get_user(target)
 
         # 取得用戶資料
@@ -122,8 +123,9 @@ class General(commands.Cog):
         await interaction.followup.send(embed=embed)
 
         # 追蹤功能使用並檢查成就
-        await AchievementManager.track_feature_usage(target.id, "profile", interaction)
-        await AchievementManager.check_money_achievements(target.id, money, interaction)
+        await AchievementManager.track_feature_usage(target.id, "profile", self.bot)
+        if show:
+            await AchievementManager.check_money_achievements(target.id, money, self.bot)
 
     def _calculate_required_exp(self, level: int) -> int:
         """計算升級所需經驗值"""
@@ -231,7 +233,7 @@ class General(commands.Cog):
         await interaction.response.send_message(embed=embed)
         
         # 追蹤功能使用
-        await AchievementManager.track_feature_usage(interaction.user.id, "links", interaction)
+        await AchievementManager.track_feature_usage(interaction.user.id, "links", self.bot)
 
     def _get_game_channel_mention(self):
         # 只取第一個允許遊戲的頻道
@@ -294,7 +296,6 @@ class General(commands.Cog):
             name="💰 遊戲與經濟",
             value=f"""
 /checkin — 每日簽到抽運勢，獲得金錢、隨機引言與圖片
-/scoreboard — 查看經驗值排行榜
 /game slot <金額> — 拉霸遊戲
 /game dice <金額> — 骰子比大小
 /game rps <金額> <選項> — 剪刀石頭布
@@ -316,10 +317,10 @@ class General(commands.Cog):
         )
         # MyGo
         embed.add_field(
-            name="🎵 MyGo 專屬",
+            name="🎵 MyGo/ave-mujica 專屬",
             value="""
-/mygo <關鍵字> — 搜尋 MyGO!!!!! 圖片
-/mygo_quote — 隨機 MyGO!!!!! 名言
+/mygo <關鍵字> — 搜尋 MyGO!!!!! / ave-mujica 圖片
+/quote — 隨機 MyGO!!!!! / ave-mujica 名言
 """,
             inline=False,
         )
@@ -370,11 +371,20 @@ class General(commands.Cog):
                 inline = False
             )
             await AchievementManager.check_and_award_achievement(interaction.user.id, "boom_light_bad", self.bot)
-        else:
+        elif date < datetime.datetime(2025, 7, 4):
             embed = discord.Embed(title = "遊戲介紹")
             embed.add_field(
                 name = "手冊連結",
                 value = "[【點我！！】](https://drive.google.com/file/d/10gHC5_721gVMX4exWC0NVeLNwWw243TA/view?usp=drivesdk)",
+                inline = False
+            )
+        else:
+            embed = discord.Embed(title = "時候還沒到喔！", color = 0xFF0000)
+            embed.add_field(
+                name = "⁉ 遊戲結束了 ⁉",
+                value = """你也太慢半拍了吧…
+`flag{||4db02ceb09e30901cd50b6e25dbabf||}`
+[不過你真的想要看也是可以啦](https://drive.google.com/file/d/10gHC5_721gVMX4exWC0NVeLNwWw243TA/view?usp=drivesdk)""",
                 inline = False
             )
         await interaction.response.send_message(embed = embed, ephemeral = True)

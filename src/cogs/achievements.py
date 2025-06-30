@@ -33,7 +33,7 @@ class AchievementCog(commands.Cog):
             # 顯示已獲得的成就
             achieved_text = ""
             for achievement in user_achievements:
-                achieved_text += f"{achievement.icon} **{achievement.name}**\n{achievement.description}\n\n"
+                achieved_text += f"{achievement.icon} **{achievement.name}**\n"
 
             embed.add_field(
                 name=f"已獲得成就 ({len(user_achievements)}/{len(ACHIEVEMENTS)})",
@@ -56,7 +56,7 @@ class AchievementCog(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
         
         # 追蹤功能使用
-        await AchievementManager.track_feature_usage(interaction.user.id, "achievements", interaction)
+        await AchievementManager.track_feature_usage(interaction.user.id, "achievements", self.bot)
 
 
 async def setup(bot: commands.Bot):

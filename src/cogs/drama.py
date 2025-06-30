@@ -1,6 +1,8 @@
 import asyncio
 import discord
 from discord.ext import commands
+from discord import app_commands
+
 import random
 
 from src import config
@@ -9,20 +11,24 @@ class Drama(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.command(name="startDrama")
-    async def startDrama(self, ctx: commands.Context):
+    @app_commands.command(name="startDrama")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.default_permissions(
+        discord.Permissions(administrator=True), manage_messages=True
+    )
+    async def startDrama(self, interaction: discord.Interaction):
         # if ctx.author.id != 825730483601276929:  # 替換為你的 Discord ID
             # print(f"{ctx.author.display_name} 沒有權限使用這個指令")
             # return
 
-        drama_channel = ctx.guild.get_channel(config.DRAMA_CHANNEL_ID)
+        drama_channel = interaction.guild.get_channel(config.DRAMA_CHANNEL_ID)
         
         # drama_channel_name = "demo區"
         # drama_channel = discord.utils.get(ctx.guild.text_channels, name=f"{drama_channel_name}")
 
         starfish_webhook = await drama_channel.create_webhook(name="Starfish")
-        starfish_avatar = ctx.guild.get_member(825730483601276929).avatar.url
-        starfish_name = ctx.guild.get_member(825730483601276929).name
+        starfish_avatar = interaction.guild.get_member(825730483601276929).avatar.url
+        starfish_name = interaction.guild.get_member(825730483601276929).name
 
         names = ["一番賞", "二靈古堡", "動物三友會", "使出 Z 招四", "五敵鐵金剛", "六界玩家"]
         random.shuffle(names)
