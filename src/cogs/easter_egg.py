@@ -125,7 +125,7 @@ class EasterEgg(commands.Cog):
         embed.set_footer(
             text=f"已找到 {len(found_flags_ids)} / {len(self.flags_data)} 個彩蛋"
         )
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         
         # 追蹤功能使用
         await AchievementManager.track_feature_usage(interaction.user.id, "egg", interaction)

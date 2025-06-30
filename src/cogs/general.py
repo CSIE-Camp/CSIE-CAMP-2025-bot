@@ -16,6 +16,7 @@ from typing import Optional
 
 from src.utils.user_data import user_data_manager
 from src.utils.achievements import AchievementManager
+from src.utils.achievements import achievement_manager
 from src.constants import (
     DEFAULT_LEVEL,
     DEFAULT_EXP,
@@ -49,7 +50,7 @@ class General(commands.Cog):
         # 只能查自己
         target = interaction.user
 
-        await interaction.response.defer(thinking=True)
+        await interaction.response.defer(thinking=True, ephemeral=True)
         user_data = await user_data_manager.get_user(target)
 
         # 取得用戶資料
@@ -368,6 +369,7 @@ class General(commands.Cog):
                 value = "還想要偷看呀！",
                 inline = False
             )
+            await AchievementManager.check_and_award_achievement(interaction.user.id, "boom_light_bad")
         else:
             embed = discord.Embed(title = "遊戲介紹")
             embed.add_field(

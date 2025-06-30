@@ -53,7 +53,7 @@ class AchievementCog(commands.Cog):
         embed.set_thumbnail(url=target_user.avatar.url if target_user.avatar else None)
         embed.set_footer(text="繼續努力解鎖更多成就吧！")
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         
         # 追蹤功能使用
         await AchievementManager.track_feature_usage(interaction.user.id, "achievements", interaction)

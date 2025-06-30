@@ -53,7 +53,7 @@ from src.utils.image_gen import generate_image
 class PetSystem(commands.Cog):
     """虛擬寵物養成系統"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.pets_data_file = os.path.join(config.DATA_DIR, "pets_data.json")
         self.pets: Dict[str, Dict[str, Any]] = {}
@@ -993,7 +993,7 @@ class PetSystem(commands.Cog):
                      self.pets[user_id]["waiting_for_comfort"] = comfort_info_backup
                      self.save_pets_data()
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     """設置並註冊 PetSystem Cog"""
     # 確保 AchievementManager 已經被初始化
     if not hasattr(bot, 'achievement_manager'):

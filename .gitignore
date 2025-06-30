@@ -69,6 +69,7 @@ venv.bak/
 user_data.json
 data/user_data.json
 data/bot_state.json
+data/pets_data.json
 
 # 臨時檔案
 *.tmp

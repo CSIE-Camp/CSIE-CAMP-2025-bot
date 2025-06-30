@@ -214,31 +214,7 @@ class Schedule(commands.Cog):
         ]
         footer_content = random.choice(footer_contents)
         embed.set_footer(text=footer_content)
-        await interaction.response.send_message(embed=embed)
-
-        # 檢查成就
-        user_id = interaction.user.id
-        today = datetime.date.today()
-        today_str = today.isoformat()
-
-        # 獲取用戶資料
-        user = await user_data_manager.get_user(user_id, interaction.user)
-
-        last_checkin_str = user.get("last_daily")
-
-        # 計算連續簽到天數
-        yesterday = today - datetime.timedelta(days=1)
-        current_streak = user.get("daily_streak", 0)
-
-        if last_checkin_str == yesterday.isoformat():
-            # 如果昨天有簽到，連續天數+1
-            new_streak = current_streak + 1
-        else:
-            # 如果昨天沒簽到 (中斷或首次)，則重置為 1
-            new_streak = 1
-
-        if new_streak == 4:
-            achievement_manager.unlock_achievement(user_id, "miss_you")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
         # 檢查成就
         user_id = interaction.user.id
