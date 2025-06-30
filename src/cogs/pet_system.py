@@ -13,6 +13,7 @@
 • /pet_status        - 查看寵物狀態和好感度
 • /play_ball         - 跟寵物玩球遊戲
 • /feed_pet          - 餵食寵物（增加好感度）
+• /comfort_pet       - 安慰你的寵物（當它心情不好時）
 • /pet_ranking       - 查看好感度排行榜
 • /show_off_pet      - 在公共頻道炫耀你的寵物
 • /pet_thread        - 快速前往寵物專屬討論串
@@ -24,7 +25,7 @@
 
 寵物行為：
 • 每 3-8 分鐘會帶禮物給主人（在專屬討論串中）
-• 每 5-12 分鐘會表達心情不好（在專屬討論串中）
+• 每 5-12 分鐘會表達心情不好，需要主人安慰（根據回覆品質：優秀+5、良好+3、一般+2、敷衍+1、不當-1好感，超時-2好感）
 • 每 4-10 分鐘會去尋找寶物（在專屬討論串中）
 • 每 6-15 分鐘會睡覺休息（在專屬討論串中）
 • 每 8-18 分鐘會跳舞娛樂（在專屬討論串中）
@@ -39,12 +40,14 @@ import asyncio
 import json
 import os
 from typing import Dict, Any, Optional
+from io import BytesIO
 
 from src import config
 from src.utils.user_data import user_data_manager
 from src.utils.llm import generate_text
 from src.utils.pet_ai import pet_ai_generator
-from src.utils.achievements import AchievementManager
+from src.utils.achievements import AchievementManager, track_feature_usage
+from src.utils.image_gen import generate_image
 
 
 class PetSystem(commands.Cog):
@@ -55,6 +58,7 @@ class PetSystem(commands.Cog):
         self.pets_data_file = os.path.join(config.DATA_DIR, "pets_data.json")
         self.pets: Dict[str, Dict[str, Any]] = {}
         self.pet_timers: Dict[str, Dict[str, datetime.datetime]] = {}
+        self.comfort_locks: Dict[str, asyncio.Lock] = {}
         self.load_pets_data()
 
         # 啟動定時檢查任務
@@ -117,8 +121,17 @@ class PetSystem(commands.Cog):
     def save_pets_data(self):
         """保存寵物資料"""
         try:
+            # 創建可序列化的寵物資料副本
+            serializable_pets = {}
+            for user_id, pet_data in self.pets.items():
+                pet_copy = pet_data.copy()
+                # 移除無法序列化的 bytes 資料（頭像）
+                if "avatar" in pet_copy and isinstance(pet_copy["avatar"], bytes):
+                    pet_copy.pop("avatar")
+                serializable_pets[user_id] = pet_copy
+            
             data = {
-                "pets": self.pets,
+                "pets": serializable_pets,
                 "last_updated": datetime.datetime.now().isoformat()
             }
             os.makedirs(os.path.dirname(self.pets_data_file), exist_ok=True)
@@ -131,11 +144,8 @@ class PetSystem(commands.Cog):
         """生成所有寵物行為的定時器"""
         now = datetime.datetime.now()
         return {
-            "gift": now + datetime.timedelta(minutes=random.randint(3, 8)),
-            "bad_mood": now + datetime.timedelta(minutes=random.randint(5, 12)),
-            "treasure_hunt": now + datetime.timedelta(minutes=random.randint(4, 10)),
-            "sleep": now + datetime.timedelta(minutes=random.randint(6, 15)),
-            "dance": now + datetime.timedelta(minutes=random.randint(8, 18))
+            "bad_mood": now + datetime.timedelta(seconds=random.randint(60, 90)),
+            "treasure_hunt": now + datetime.timedelta(minutes=random.randint(1400, 1500)),
         }
 
     def reset_timer(self, user_id: str, timer_type: str):
@@ -144,11 +154,8 @@ class PetSystem(commands.Cog):
             self.pet_timers[user_id] = {}
         
         timer_ranges = {
-            "gift": (3, 8),
-            "bad_mood": (5, 12),
-            "treasure_hunt": (4, 10),
-            "sleep": (6, 15),
-            "dance": (8, 18)
+            "bad_mood": (60, 90),
+            "treasure_hunt": (1400, 1500),
         }
         
         min_time, max_time = timer_ranges.get(timer_type, (5, 10))
@@ -183,20 +190,28 @@ class PetSystem(commands.Cog):
     async def create_pet_webhook(self, channel, pet_name: str, pet_avatar_data = None):
         """創建寵物 Webhook"""
         try:
+            # 如果是 Thread，使用父頻道來創建 Webhook
+            target_channel = channel
+            if isinstance(channel, discord.Thread):
+                target_channel = channel.parent
+                if not target_channel:
+                    print(f"❌ Thread {channel.name} 沒有父頻道")
+                    return None
+            
             # 檢查機器人是否有管理 Webhook 的權限
-            if not channel.permissions_for(channel.guild.me).manage_webhooks:
-                print(f"❌ 機器人在頻道 {channel.name} 缺少 Manage Webhooks 權限")
+            if not target_channel.permissions_for(target_channel.guild.me).manage_webhooks:
+                print(f"❌ 機器人在頻道 {target_channel.name} 缺少 Manage Webhooks 權限")
                 return None
                 
             # 如果有頭像資料且是 bytes 類型，使用它作為頭像
             if pet_avatar_data and isinstance(pet_avatar_data, bytes):
                 try:
-                    webhook = await channel.create_webhook(name=f"Pet_{pet_name}", avatar=pet_avatar_data)
+                    webhook = await target_channel.create_webhook(name=f"Pet_{pet_name}", avatar=pet_avatar_data)
                 except:
                     # 如果使用頭像失敗，創建無頭像的 webhook
-                    webhook = await channel.create_webhook(name=f"Pet_{pet_name}")
+                    webhook = await target_channel.create_webhook(name=f"Pet_{pet_name}")
             else:
-                webhook = await channel.create_webhook(name=f"Pet_{pet_name}")
+                webhook = await target_channel.create_webhook(name=f"Pet_{pet_name}")
             return webhook
         except discord.Forbidden:
             print(f"❌ 創建 Webhook 被拒絕：機器人可能缺少權限")
@@ -215,6 +230,9 @@ class PetSystem(commands.Cog):
                 await asyncio.sleep(30)  # 每30秒檢查一次
                 current_time = datetime.datetime.now()
                 
+                # 檢查等待安慰的寵物是否超時
+                await self.check_comfort_timeouts(current_time)
+                
                 for user_id, timers in self.pet_timers.items():
                     if user_id not in self.pets:
                         continue
@@ -230,6 +248,85 @@ class PetSystem(commands.Cog):
             except Exception as e:
                 print(f"❌ 寵物定時器錯誤: {e}")
                 await asyncio.sleep(60)  # 錯誤時等待更久
+    
+    async def check_comfort_timeouts(self, current_time: datetime.datetime):
+        """檢查等待安慰的寵物是否超時"""
+        try:
+            timeout_pets = []
+            
+            for user_id, pet in self.pets.items():
+                waiting_comfort = pet.get("waiting_for_comfort")
+                if waiting_comfort:
+                    comfort_time = datetime.datetime.fromisoformat(waiting_comfort["timestamp"])
+                    time_diff = (current_time - comfort_time).total_seconds()
+                    
+                    # 超過安慰時間限制
+                    if time_diff > waiting_comfort["comfort_timeout"]:
+                        timeout_pets.append(user_id)
+            
+            # 處理超時的寵物
+            for user_id in timeout_pets:
+                await self.handle_comfort_timeout(user_id)
+                
+        except Exception as e:
+            print(f"❌ 檢查安慰超時失敗: {e}")
+    
+    async def handle_comfort_timeout(self, user_id: str):
+        """處理安慰超時的寵物"""
+        try:
+            pet = self.pets[user_id]
+            pet_name = pet["name"]
+            
+            # 好感度-2
+            old_affection = pet.get("affection", 0)
+            new_affection = max(0, old_affection - 2)  # 確保不會變成負數
+            self.pets[user_id]["affection"] = new_affection
+            
+            # 清除等待安慰狀態
+            del self.pets[user_id]["waiting_for_comfort"]
+            self.save_pets_data()
+            
+            # 同步更新用戶資料
+            await self._sync_user_affection(user_id, new_affection)
+            
+            # 找到對應的頻道
+            channel_id = pet.get("thread_id") or pet.get("channel_id")
+            if channel_id:
+                channel = self.bot.get_channel(channel_id)
+                if channel:
+                    # 生成失望的回應
+                    context = "主人沒有來安慰我，我感到很失望和難過..."
+                    response_msg = await pet_ai_generator.generate_pet_response(pet_name, pet["description"], context)
+                    
+                    # 發送超時訊息
+                    timeout_embed = discord.Embed(
+                        title="😢 寵物感到被忽視",
+                        description=f"**{pet_name}** 等了很久都沒有等到主人的安慰...\n💔 好感度 -2",
+                        color=0xff6b6b
+                    )
+                    await channel.send(embed=timeout_embed)
+                    
+                    # 寵物使用 Webhook 表達失望
+                    await asyncio.sleep(1)
+                    webhook = await self.create_pet_webhook(channel, pet_name, pet.get("avatar"))
+                    if webhook:
+                        try:
+                            emoji_prefix = pet.get("avatar_emoji", "🐾")
+                            if isinstance(channel, discord.Thread):
+                                await webhook.send(response_msg, username=f"{emoji_prefix} {pet_name}", thread=channel)
+                            else:
+                                await webhook.send(response_msg, username=f"{emoji_prefix} {pet_name}")
+                            await webhook.delete()
+                        except Exception as e:
+                            print(f"❌ 超時回應 Webhook 失敗: {e}")
+                            emoji_prefix = pet.get("avatar_emoji", "🐾")
+                            await channel.send(f"{emoji_prefix} **{pet_name}**: {response_msg}")
+                    else:
+                        emoji_prefix = pet.get("avatar_emoji", "🐾")
+                        await channel.send(f"{emoji_prefix} **{pet_name}**: {response_msg}")
+                        
+        except Exception as e:
+            print(f"❌ 處理安慰超時失敗: {e}")
 
     async def handle_pet_event(self, user_id: str, pet: Dict[str, Any], event_type: str):
         """處理寵物事件"""
@@ -254,9 +351,70 @@ class PetSystem(commands.Cog):
             pet_name = pet["name"]
             pet_description = pet["description"]
 
-            # 使用新的 AI 生成器產生行為描述
+            # 生成行為描述
             response = await pet_ai_generator.generate_pet_behavior_description(pet_name, pet_description, event_type)
 
+            # --- Treasure Hunt Special Logic ---
+            if event_type == "treasure_hunt":
+                treasure_description = response
+                image_file = None
+                image_prompt = None
+                
+                try:
+                    # 1. 生成圖片提示詞
+                    image_prompt = await pet_ai_generator.generate_treasure_image_prompt(treasure_description)
+
+                    # 2. 生成圖片
+                    if image_prompt:
+                        print(f"💎 正在為「{treasure_description}」生成寶物圖片...")
+                        print(f"📝 圖片提示詞: {image_prompt}")
+                        image_data = await generate_image(image_prompt)
+                        if image_data:
+                            print("✅ 寶物圖片生成成功！")
+                            image_file = discord.File(fp=image_data, filename="treasure.png")
+                        else:
+                            print("❌ 寶物圖片生成失敗。")
+                except Exception as e:
+                    print(f"❌ 寶物圖片生成過程中發生錯誤: {e}")
+                    image_file = None
+
+                # 3. 發送含有文字和圖片的訊息
+                webhook = await self.create_pet_webhook(channel, pet_name, pet.get("avatar"))
+                emoji_prefix = pet.get("avatar_emoji", "🐾")
+                
+                # 準備訊息內容
+                message_content = treasure_description
+                
+                if webhook:
+                    try:
+                        # Webhook 可以同時發送文字和檔案
+                        if isinstance(channel, discord.Thread):
+                            await webhook.send(message_content, username=f"{emoji_prefix} {pet_name}", thread=channel, file=image_file if image_file else discord.utils.MISSING)
+                        else:
+                            await webhook.send(message_content, username=f"{emoji_prefix} {pet_name}", file=image_file if image_file else discord.utils.MISSING)
+                        await webhook.delete()
+                        
+                        # 如果圖片生成失敗，發送備用訊息
+                        if not image_file:
+                            await channel.send("✨ (想像一下這裡有張閃閃發光的寶物圖片)")
+                            
+                    except Exception as e:
+                        print(f"❌ Webhook 發送失敗: {e}")
+                        # Webhook 失敗，回退到普通訊息
+                        await channel.send(f"{emoji_prefix} **{pet_name}**: {message_content}", file=image_file if image_file else discord.utils.MISSING)
+                        if not image_file:
+                            await channel.send("✨ (想像一下這裡有張閃閃發光的寶物圖片)")
+                else:
+                    # 無法創建 Webhook，使用普通訊息
+                    await channel.send(f"{emoji_prefix} **{pet_name}**: {message_content}", file=image_file if image_file else discord.utils.MISSING)
+                    if not image_file:
+                        await channel.send("✨ (想像一下這裡有張閃閃發光的寶物圖片)")
+
+                # 增加好感度
+                self.increase_affection(user_id, 2) # 找到寶物獎勵多一點
+                return # 結束事件處理
+
+            # --- Logic for other events ---
             # 使用 Webhook 讓寵物以自己的身份說話
             webhook = await self.create_pet_webhook(channel, pet_name, pet.get("avatar"))
             if webhook:
@@ -264,7 +422,13 @@ class PetSystem(commands.Cog):
                     # 添加表情符號前綴讓訊息更生動
                     emoji_prefix = pet.get("avatar_emoji", "🐾")
                     formatted_response = f"{response}"
-                    await webhook.send(formatted_response, username=f"{emoji_prefix} {pet_name}")
+                    
+                    # 如果是在 Thread 中，指定 thread 參數
+                    if isinstance(channel, discord.Thread):
+                        await webhook.send(formatted_response, username=f"{emoji_prefix} {pet_name}", thread=channel)
+                    else:
+                        await webhook.send(formatted_response, username=f"{emoji_prefix} {pet_name}")
+                    
                     await webhook.delete()  # 使用完畢後刪除 webhook
                 except Exception as e:
                     print(f"❌ Webhook 發送失敗: {e}")
@@ -276,9 +440,25 @@ class PetSystem(commands.Cog):
                 emoji_prefix = pet.get("avatar_emoji", "🐾")
                 await channel.send(f"{emoji_prefix} **{pet_name}**: {response}")
 
-            # 某些事件會增加好感度
-            if event_type in ["gift", "treasure_hunt", "dance"]:
+            # 不同事件的好感度影響
+            if event_type in ["gift", "dance"]: # treasure_hunt 已在上面處理
                 self.increase_affection(user_id, 1)
+            elif event_type == "bad_mood":
+                # 心情不好時，設置等待回應狀態
+                self.pets[user_id]["waiting_for_comfort"] = {
+                    "timestamp": datetime.datetime.now().isoformat(),
+                    "channel_id": channel.id,
+                    "comfort_timeout": 300  # 5分鐘內需要回應
+                }
+                self.save_pets_data()
+                
+                # 添加回應提示
+                comfort_embed = discord.Embed(
+                    title="💔 寵物需要關愛",
+                    description="你的寵物心情不好，需要你的安慰！\n\n🤗 **在此頻道說些溫暖的話來安慰你的寵物吧**\n",
+                    color=0xffb6c1
+                )
+                await channel.send(embed=comfort_embed, delete_after=300)  # 5分鐘後自動刪除提示
                 
         except Exception as e:
             print(f"❌ 處理寵物事件失敗: {e}")
@@ -312,24 +492,24 @@ class PetSystem(commands.Cog):
             
             # 寵物愛好者成就 - 認養寵物
             if user_str in self.pets:
-                await AchievementManager.check_and_award_achievement(user_id, "pet_adopter")
+                await self.bot.achievement_manager.check_and_award_achievement(user_id, "pet_adopter")
             
             # AI 寵物大師成就 - 成功生成 AI 頭像
             if has_ai_avatar:
-                await AchievementManager.check_and_award_achievement(user_id, "ai_pet_master")
+                await self.bot.achievement_manager.check_and_award_achievement(user_id, "ai_pet_master")
             
             # 寵物語者成就 - 好感度達到50
             if user_str in self.pets:
                 affection = self.pets[user_str].get("affection", 0)
                 if affection >= 50:
-                    await AchievementManager.check_and_award_achievement(user_id, "pet_whisperer")
+                    await self.bot.achievement_manager.check_and_award_achievement(user_id, "pet_whisperer")
             
             # 資深飼主成就 - 相處超過7天
             if user_str in self.pets:
                 adopted_date = datetime.datetime.fromisoformat(self.pets[user_str]["adopted_date"])
                 days_together = (datetime.datetime.now() - adopted_date).days
                 if days_together >= 7:
-                    await AchievementManager.check_and_award_achievement(user_id, "long_term_owner")
+                    await self.bot.achievement_manager.check_and_award_achievement(user_id, "long_term_owner")
                     
         except Exception as e:
             print(f"❌ 檢查寵物成就失敗: {e}")
@@ -397,6 +577,9 @@ class PetSystem(commands.Cog):
 
             # 檢查並發放成就
             await self.check_pet_achievements(interaction.user.id, avatar_bytes)
+            
+            # 追蹤功能使用
+            await track_feature_usage(interaction.user.id, "pet")
 
             # 建立歡迎 Embed
             embed = discord.Embed(
@@ -426,7 +609,7 @@ class PetSystem(commands.Cog):
             webhook = await self.create_pet_webhook(thread, pet_name, avatar_bytes)
             if webhook:
                 try:
-                    await webhook.send(greeting, username=pet_name)
+                    await webhook.send(greeting, username=pet_name, thread=thread)
                     await webhook.delete()  # 使用完畢後刪除 webhook
                 except Exception as e:
                     print(f"❌ 寵物打招呼 Webhook 失敗: {e}")
@@ -488,6 +671,9 @@ class PetSystem(commands.Cog):
         embed.add_field(name="💭 寵物狀態", value=status, inline=False)
         
         await interaction.response.send_message(embed=embed)
+        
+        # 追蹤功能使用
+        await track_feature_usage(interaction.user.id, "pet")
 
     @app_commands.command(name="play_ball", description="跟你的寵物玩球遊戲")
     async def play_ball(self, interaction: discord.Interaction):
@@ -552,7 +738,6 @@ class PetSystem(commands.Cog):
             # 更新好感度
             if affection_gain > 0:
                 self.increase_affection(user_id, affection_gain)
-                result_msg += f" 💖 好感度 +{affection_gain}！"
 
             # 更新訊息
             new_embed = discord.Embed(
@@ -572,26 +757,24 @@ class PetSystem(commands.Cog):
             if webhook:
                 try:
                     emoji_prefix = pet.get("avatar_emoji", "🐾")
-                    await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
-                    await webhook.delete()  # 使用完畢後刪除 webhook
+                    if isinstance(interaction.channel, discord.Thread):
+                        await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}", thread=interaction.channel)
+                    else:
+                        await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
+                    await webhook.delete()
                 except Exception as e:
                     print(f"❌ 玩球回應 Webhook 失敗: {e}")
                     emoji_prefix = pet.get("avatar_emoji", "🐾")
-                    await interaction.followup.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
+                    await interaction.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
             else:
-                # 如果無法創建 Webhook，使用普通訊息
                 emoji_prefix = pet.get("avatar_emoji", "🐾")
-                await interaction.followup.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
-            await message.clear_reactions()
+                await interaction.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
+
+            # 追蹤功能使用
+            await track_feature_usage(interaction.user.id, "pet")
 
         except asyncio.TimeoutError:
-            timeout_embed = discord.Embed(
-                title="⏰ 時間到了",
-                description=f"**{pet_name}**: 主人都不理我... (´･ω･`)",
-                color=0x95a5a6
-            )
-            await message.edit(embed=timeout_embed)
-            await message.clear_reactions()
+            await message.edit(content=f"**{pet_name}** 等不到你的選擇，自己跑去玩了。", embed=None, view=None)
 
     @app_commands.command(name="feed_pet", description="餵食你的寵物")
     async def feed_pet(self, interaction: discord.Interaction):
@@ -608,12 +791,9 @@ class PetSystem(commands.Cog):
         # 檢查餵食冷卻時間（每小時只能餵一次）
         last_fed = pet.get("last_fed")
         if last_fed:
-            last_fed_time = datetime.datetime.fromisoformat(last_fed)
-            time_diff = datetime.datetime.now() - last_fed_time
-            if time_diff.total_seconds() < 3600:  # 1小時 = 3600秒
-                remaining = 3600 - time_diff.total_seconds()
-                minutes = int(remaining // 60)
-                await interaction.response.send_message(f"⏰ **{pet_name}** 還不餓呢！請等待 {minutes} 分鐘後再餵食。")
+            time_since_fed = datetime.datetime.now() - datetime.datetime.fromisoformat(last_fed)
+            if time_since_fed < datetime.timedelta(hours=1):
+                await interaction.response.send_message(f"❌ **{pet_name}** 剛吃飽，請一小時後再餵食哦！")
                 return
 
         # 餵食成功
@@ -627,40 +807,41 @@ class PetSystem(commands.Cog):
         self.pets[user_id]["last_fed"] = datetime.datetime.now().isoformat()
         self.save_pets_data()
 
-        embed = discord.Embed(
-            title="🍽️ 餵食成功！",
-            description=f"你給 **{pet_name}** 餵了 {selected_food}",
-            color=0x00ff90
-        )
-        embed.add_field(name="💖 好感度增加", value=f"+{affection_gain}", inline=True)
-        embed.add_field(name="💖 目前好感度", value=str(pet.get("affection", 0)), inline=True)
-        embed.add_field(name="⏰ 下次餵食", value="1 小時後", inline=True)
+        # 使用 AI 生成回應
+        context = f"主人餵我吃了 {selected_food.split(' ')[1]}，真好吃！"
+        pet_response = await pet_ai_generator.generate_pet_response(pet_name, pet["description"], context)
 
+        embed = discord.Embed(
+            title="🍖 餵食成功！",
+            description=f"你餵食了 **{pet_name}** {selected_food}！",
+            color=0x90ee90
+        )
+        current_affection = self.pets[user_id].get("affection", 0)
+        embed.add_field(name="💖 好感度", value=f"{current_affection} (+{affection_gain})", inline=True)
+        
         await interaction.response.send_message(embed=embed)
 
-        # 寵物使用 AI 生成回應
-        pet_name = pet["name"]
-        pet_description = pet["description"]
-        context = f"主人剛剛餵了我{selected_food}，我很開心！"
-        response = await pet_ai_generator.generate_pet_response(pet_name, pet_description, context)
-        
+        # 寵物使用 Webhook 回應
         await asyncio.sleep(1)
-        
-        # 創建 Webhook 讓寵物以自己的身份回應
         webhook = await self.create_pet_webhook(interaction.channel, pet_name, pet.get("avatar"))
         if webhook:
             try:
                 emoji_prefix = pet.get("avatar_emoji", "🐾")
-                await webhook.send(response, username=f"{emoji_prefix} {pet_name}")
-                await webhook.delete()  # 使用完畢後刪除 webhook
+                if isinstance(interaction.channel, discord.Thread):
+                    await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}", thread=interaction.channel)
+                else:
+                    await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
+                await webhook.delete()
             except Exception as e:
                 print(f"❌ 餵食回應 Webhook 失敗: {e}")
                 emoji_prefix = pet.get("avatar_emoji", "🐾")
-                await interaction.followup.send(f"{emoji_prefix} **{pet_name}**: {response}")
+                await interaction.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
         else:
-            # 如果無法創建 Webhook，使用普通訊息
             emoji_prefix = pet.get("avatar_emoji", "🐾")
-            await interaction.followup.send(f"{emoji_prefix} **{pet_name}**: {response}")
+            await interaction.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
+
+        # 追蹤功能使用
+        await track_feature_usage(interaction.user.id, "pet")
 
     @app_commands.command(name="pet_ranking", description="查看寵物好感度排行榜")
     async def pet_ranking(self, interaction: discord.Interaction):
@@ -713,169 +894,110 @@ class PetSystem(commands.Cog):
                 inline=True
             )
 
-        embed.set_footer(text="與寵物多互動可以增加好感度哦！")
+        embed.set_footer(text="排行榜每 15 分鐘更新一次")
         await interaction.response.send_message(embed=embed)
 
-    @commands.command(name="abandon_pet", hidden=True)
-    @commands.is_owner()
-    async def abandon_pet(self, ctx, user_id: str = None):
-        """放棄寵物（管理員指令）"""
-        target_user_id = user_id or str(ctx.author.id)
-        
-        if target_user_id not in self.pets:
-            await ctx.send("❌ 指定用戶沒有寵物！")
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        """監聽訊息以處理寵物安慰互動"""
+        # 忽略機器人自己或 Webhook 的訊息
+        if message.author.bot:
             return
 
-        pet_name = self.pets[target_user_id]["name"]
-        del self.pets[target_user_id]
-        
-        if target_user_id in self.pet_timers:
-            del self.pet_timers[target_user_id]
-            
-        self.save_pets_data()
-        
-        await ctx.send(f"💔 已移除寵物 **{pet_name}**")
+        user_id = str(message.author.id)
 
-    @app_commands.command(name="show_off_pet", description="在公共頻道炫耀你的寵物")
-    async def show_off_pet(self, interaction: discord.Interaction):
-        """炫耀寵物：/show_off_pet"""
-        user_id = str(interaction.user.id)
-        
-        if user_id not in self.pets:
-            await interaction.response.send_message("❌ 你還沒有認養寵物！使用 `/adopt 寵物名字` 來認養一隻吧！", ephemeral=True)
+        # 檢查用戶是否有寵物，以及寵物是否在等待安慰
+        if user_id not in self.pets or "waiting_for_comfort" not in self.pets[user_id]:
             return
 
         pet = self.pets[user_id]
-        pet_name = pet["name"]
-        pet_description = pet["description"]
-        affection = pet.get("affection", 0)
-        
-        # 計算相處天數
-        adopted_date = datetime.datetime.fromisoformat(pet["adopted_date"])
-        days_together = (datetime.datetime.now() - adopted_date).days
+        comfort_info = pet.get("waiting_for_comfort")
 
-        # 根據好感度決定炫耀內容
-        if affection >= 50:
-            love_status = "💕 非常愛你"
-            show_off_color = 0xff69b4
-        elif affection >= 30:
-            love_status = "😊 很喜歡你"
-            show_off_color = 0xffd700
-        elif affection >= 15:
-            love_status = "🙂 喜歡你"
-            show_off_color = 0x87ceeb
-        elif affection >= 5:
-            love_status = "😐 普通"
-            show_off_color = 0xffa500
-        else:
-            love_status = "😟 還不太熟"
-            show_off_color = 0x808080
+        # 檢查是否在正確的頻道
+        if message.channel.id != comfort_info["channel_id"]:
+            return
 
-        # 生成炫耀內容
-        avatar_emoji = pet.get("avatar_emoji", "🐾")
+        # --- Comfort Interaction Logic ---
+        # 取得或創建該用戶的鎖
+        lock = self.comfort_locks.get(user_id)
+        if not lock:
+            lock = asyncio.Lock()
+            self.comfort_locks[user_id] = lock
         
-        embed = discord.Embed(
-            title=f"🌟 {interaction.user.display_name} 的寵物 {pet_name} {avatar_emoji}",
-            description=f"*{pet_description}*",
-            color=show_off_color
-        )
-        
-        embed.add_field(name="💖 好感度", value=f"{affection} 分", inline=True)
-        embed.add_field(name="😊 關係狀態", value=love_status, inline=True)
-        embed.add_field(name="📅 相處天數", value=f"{days_together} 天", inline=True)
-        
-        # 添加特殊成就
-        achievements = []
-        if affection >= 100:
-            achievements.append("🏆 超級寵物")
-        if affection >= 50:
-            achievements.append("💝 摯愛夥伴")
-        if days_together >= 30:
-            achievements.append("🎊 老朋友")
-        if days_together >= 7:
-            achievements.append("🎉 一週好友")
-            
-        if achievements:
-            embed.add_field(name="🏅 特殊成就", value=" ".join(achievements), inline=False)
-        
-        # 使用 AI 生成寵物的炫耀回應
-        context = "主人正在向大家炫耀我們的感情，我很開心！"
-        pet_response = await pet_ai_generator.generate_pet_response(pet_name, pet_description, context)
-        
-        embed.set_footer(text=f"💬 {pet_name}: {pet_response}")
-        
-        await interaction.response.send_message(embed=embed)
+        # 嘗試獲取鎖，避免競爭條件
+        async with lock:
+            # 再次檢查狀態，可能在等待鎖的時候狀態已經改變
+            # 這次要用 self.pets.get(user_id, {}) 是因為 pet 可能在上鎖前被其他協程改變
+            current_pet_data = self.pets.get(user_id, {})
+            if "waiting_for_comfort" not in current_pet_data:
+                return
 
-        # 寵物也在公共頻道說話炫耀
-        await asyncio.sleep(1)
-        
-        # 創建 Webhook 讓寵物自己說話
-        webhook = await self.create_pet_webhook(interaction.channel, pet_name, pet.get("avatar"))
-        if webhook:
             try:
-                proud_responses = [
-                    "我和主人的感情很好呢！大家看看我們的好感度！✨",
-                    "主人對我很好，我很幸福！(´▽｀)",
-                    "謝謝主人這麼疼愛我！我會繼續努力的～",
-                    "能遇到這麼好的主人真是太幸運了！💕",
-                    "主人，我也很愛你哦！ ♡(˃͈ દ ˂͈ ༶ )"
-                ]
-                proud_response = random.choice(proud_responses)
-                await webhook.send(proud_response, username=f"{avatar_emoji} {pet_name}")
-                await webhook.delete()
+                pet_name = current_pet_data["name"]
+                pet_description = current_pet_data["description"]
+                comfort_message = message.content
+
+                # 移除等待狀態，防止重複觸發
+                comfort_info_backup = current_pet_data.pop("waiting_for_comfort")
+                
+                print(f"💬 正在分析 {message.author.display_name} 對 {pet_name} 的安慰訊息...")
+
+                # 1. 分析安慰訊息品質
+                quality, analysis = await pet_ai_generator.analyze_comfort_message(pet_name, comfort_message)
+                
+                affection_gains = {"good": 3, "normal": 1, "bad": 0}
+                affection_gain = affection_gains.get(quality, 1)
+
+                # 2. 更新好感度
+                self.increase_affection(user_id, affection_gain)
+                
+                # 3. 生成寵物回應
+                context = f"主人對我說了「{comfort_message}」，我覺得..."
+                pet_response = await pet_ai_generator.generate_pet_response(pet_name, pet_description, context, mood=quality)
+
+                # 4. 發送結果
+                result_embed = discord.Embed(
+                    title="💖 安慰成功！",
+                    description=f"你溫暖的話語傳達給了 **{pet_name}**！",
+                    color=0x90ee90
+                )
+                result_embed.add_field(name="好感度變化", value=fr"+{affection_gain}", inline=True)
+                await message.channel.send(embed=result_embed)
+
+                # 5. 寵物使用 Webhook 回應
+                await asyncio.sleep(1)
+                webhook = await self.create_pet_webhook(message.channel, pet_name, current_pet_data.get("avatar"))
+                if webhook:
+                    try:
+                        emoji_prefix = current_pet_data.get("avatar_emoji", "🐾")
+                        if isinstance(message.channel, discord.Thread):
+                            await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}", thread=message.channel)
+                        else:
+                            await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
+                        await webhook.delete()
+                    except Exception as e:
+                        print(f"❌ 安慰回應 Webhook 失敗: {e}")
+                        emoji_prefix = current_pet_data.get("avatar_emoji", "🐾")
+                        await message.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
+                else:
+                    emoji_prefix = current_pet_data.get("avatar_emoji", "🐾")
+                    await message.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
+
+                # 保存資料
+                self.save_pets_data()
+
             except Exception as e:
-                print(f"❌ 炫耀回應 Webhook 失敗: {e}")
-                await interaction.followup.send(f"{avatar_emoji} **{pet_name}**: {proud_response}")
-        else:
-            # 如果無法創建 Webhook，使用普通訊息
-            proud_response = random.choice([
-                "我和主人的感情很好呢！大家看看我們的好感度！✨",
-                "主人對我很好，我很幸福！(´▽｀)",
-                "謝謝主人這麼疼愛我！我會繼續努力的～"
-            ])
-            await interaction.followup.send(f"{avatar_emoji} **{pet_name}**: {proud_response}")
-
-    @app_commands.command(name="pet_thread", description="前往你的寵物專屬討論串")
-    async def pet_thread(self, interaction: discord.Interaction):
-        """前往寵物專屬討論串：/pet_thread"""
-        user_id = str(interaction.user.id)
-        
-        if user_id not in self.pets:
-            await interaction.response.send_message("❌ 你還沒有認養寵物！使用 `/adopt 寵物名字` 來認養一隻吧！", ephemeral=True)
-            return
-
-        pet = self.pets[user_id]
-        pet_name = pet["name"]
-        thread_id = pet.get("thread_id")
-        
-        if not thread_id:
-            await interaction.response.send_message("❌ 你的寵物還沒有專屬討論串！這可能是因為寵物是在更新前認養的。", ephemeral=True)
-            return
-        
-        thread = self.bot.get_channel(thread_id)
-        if not thread:
-            await interaction.response.send_message("❌ 找不到寵物的專屬討論串，可能已被刪除。", ephemeral=True)
-            return
-        
-        avatar_emoji = pet.get("avatar_emoji", "🐾")
-        
-        embed = discord.Embed(
-            title=f"🏠 {pet_name} 的小窩",
-            description=f"點擊下方連結前往你和 **{pet_name}** {avatar_emoji} 的專屬空間！",
-            color=0x87ceeb
-        )
-        
-        embed.add_field(
-            name="📍 專屬討論串", 
-            value=f"<#{thread_id}>", 
-            inline=False
-        )
-        
-        embed.set_footer(text="在專屬討論串中，你的寵物會更頻繁地與你互動！")
-        
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
+                print(f"❌ 處理安慰訊息失敗: {e}")
+                # 如果出錯，恢復等待狀態，避免鎖死
+                if user_id in self.pets:
+                     self.pets[user_id]["waiting_for_comfort"] = comfort_info_backup
+                     self.save_pets_data()
 
 async def setup(bot):
-    """設置 Cog"""
+    """設置並註冊 PetSystem Cog"""
+    # 確保 AchievementManager 已經被初始化
+    if not hasattr(bot, 'achievement_manager'):
+        bot.achievement_manager = AchievementManager()
+        print("🔧 初始化 AchievementManager for PetSystem")
+        
     await bot.add_cog(PetSystem(bot))

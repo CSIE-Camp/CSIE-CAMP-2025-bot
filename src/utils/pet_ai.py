@@ -12,6 +12,7 @@ import random
 from typing import Dict, Any, Optional, Tuple
 from io import BytesIO
 import base64
+import json
 
 from src.utils.llm import generate_text
 from src.utils.image_gen import generate_image
@@ -46,6 +47,28 @@ class PetAIGenerator:
             "cat", "dog", "rabbit", "hamster", "fox", 
             "panda", "bear", "wolf", "lion", "tiger"
         ]
+
+    async def generate_treasure_image_prompt(self, treasure_description: str) -> Optional[str]:
+        """從寶物描述生成英文圖片提示詞"""
+        try:
+            prompt = f"""
+            根據以下中文描述，生成一個適合 AI 繪圖的、詳細的英文提示詞。
+            描述: "{treasure_description}"
+            
+            要求:
+            1. 提示詞應專注於寶物本身的外觀、材質、光澤和細節。
+            2. 風格應為：fantasy, magical, detailed, glowing, high quality, cinematic lighting, centered composition。
+            3. 只返回英文提示詞，不要包含任何其他文字。
+
+            範例:
+            中文描述: "一個閃閃發光，像水晶一樣的蘋果"
+            英文提示詞: "A sparkling crystal apple, fantasy, magical, detailed, glowing, high quality, cinematic lighting, centered composition"
+            """
+            image_prompt = await generate_text(prompt)
+            return image_prompt
+        except Exception as e:
+            print(f"❌ 生成寶物圖片提示詞失敗: {e}")
+            return "a small, glowing magic treasure chest, fantasy, magical, detailed, high quality"
 
     async def generate_pet_personality(self, pet_name: str) -> str:
         """生成寵物個性描述"""
@@ -180,11 +203,13 @@ class PetAIGenerator:
                 
                 "bad_mood": f"""
                 你是一隻名叫{pet_name}的寵物，個性：{personality}
-                你現在心情不太好，需要主人的安慰。
-                請用第一人稱，用一句可愛但委屈的話說：
-                1. 發生了什麼事讓你不開心
-                2. 希望主人怎麼安慰你
-                要求：可愛委屈，讓人想要安慰，不超過40字
+                你現在心情不太好，感到孤單或者遇到了小煩惱，需要主人的關愛和安慰。
+                請用第一人稱，用一句讓人心疼又可愛的話說：
+                1. 發生了什麼事讓你不開心（比如：下雨了、找不到玩具、肚子有點餓、想主人了等）
+                2. 表達你需要主人的陪伴和安慰
+                3. 展現出脆弱但可愛的一面
+                要求：楚楚可憐但不過度悲傷，讓人想要馬上回應安慰，不超過35字
+                例如：「嗚嗚...外面在下雨，我有點害怕，主人可以陪陪我嗎？」
                 """,
                 
                 "treasure_hunt": f"""
@@ -194,7 +219,7 @@ class PetAIGenerator:
                 1. 你的探險過程
                 2. 發現了什麼寶物
                 3. 為什麼覺得這是寶物
-                要求：興奮開心，不超過50字
+                要求：興奮開心，專注於描述寶物本身，不超過50字
                 """,
                 
                 "sleep": f"""
@@ -217,7 +242,7 @@ class PetAIGenerator:
                 """
             }
             
-            prompt = behavior_prompts.get(behavior_type, f"你是{pet_name}，請用可愛的方式說一句話。")
+            prompt = behavior_prompts.get(behavior_type, f"你現在是{pet_name}，不是AI，不可以在文字中提到AI，請用可愛的方式說一句話。")
             description = await generate_text(prompt)
             
             return description if description else self._get_fallback_behavior(behavior_type)
@@ -230,20 +255,69 @@ class PetAIGenerator:
         """獲取備用行為描述"""
         fallback_behaviors = {
             "gift": "我給主人帶了一個小禮物回來！希望主人會喜歡~ (´▽｀)",
-            "bad_mood": "嗚嗚...我心情不太好，主人可以抱抱我嗎？ (´･ω･`)",
-            "treasure_hunt": "我發現了一個閃閃發亮的小寶物！好開心！ ✨",
+            "bad_mood": "嗚嗚...我心情不太好，主人在嗎？好想要抱抱... (´･ω･`)",
             "sleep": "我剛剛做了一個很棒的夢，夢到和主人一起玩耍~ (´∀｀)",
-            "dance": "我好開心！來跳個舞給主人看！轉圈圈~ ♪(´▽｀)"
+            "treasure_hunt": "我發現了一個好棒的寶物！主人快來看看~ ✨",
+            "dance": "我好開心，想要跳舞給主人看！ヽ(´▽`)/"
         }
         return fallback_behaviors.get(behavior_type, "我是一隻可愛的寵物！(´▽｀)")
 
-    async def generate_pet_response(self, pet_name: str, personality: str, context: str) -> str:
+    async def analyze_comfort_message(self, pet_name: str, message_content: str) -> Tuple[str, str]:
+        """分析安慰訊息的品質"""
+        try:
+            prompt = f"""
+            你是一個寵物心理分析師。請分析以下主人對寵物 {pet_name} 的安慰訊息。
+
+            主人的訊息：「{message_content}」
+
+            請根據以下標準，將訊息分類為「good」、「normal」或「bad」，並提供一句話的簡短分析。
+            - good: 訊息充滿愛心、耐心，能有效安撫寵物的情緒。
+            - normal: 訊息表達了關心，但比較簡短或普通。
+            - bad: 訊息可能帶有敷衍、不耐煩或負面的情緒，無法安慰寵物。
+
+            請以 JSON 格式回傳結果，包含 "quality" 和 "analysis" 兩個鍵。
+            例如:
+            {{
+                "quality": "good",
+                "analysis": "主人非常溫柔，給予了寵物滿滿的安全感。"
+            }}
+            """
+            
+            response_text = await generate_text(prompt)
+            
+            # 移除程式碼區塊標記
+            if response_text.strip().startswith("```json"):
+                response_text = response_text.strip()[7:-3].strip()
+            elif response_text.strip().startswith("```"):
+                 response_text = response_text.strip()[3:-3].strip()
+
+            response_json = json.loads(response_text)
+            
+            quality = response_json.get("quality", "normal")
+            analysis = response_json.get("analysis", "AI分析失敗，給予預設回應。")
+            
+            return quality, analysis
+
+        except Exception as e:
+            print(f"❌ 分析安慰訊息失敗: {e}")
+            return "normal", "無法分析訊息，但心意最重要！"
+
+    async def generate_pet_response(self, pet_name: str, personality: str, context: str, mood: Optional[str] = None) -> str:
         """生成寵物回應"""
         try:
+            mood_prompt = ""
+            if mood == "good":
+                mood_prompt = "現在你感到非常開心和被愛。"
+            elif mood == "normal":
+                mood_prompt = "現在你感覺好多了。"
+            elif mood == "bad":
+                mood_prompt = "現在你還是有點難過和困惑。"
+
             prompt = f"""
             你是一隻名叫{pet_name}的虛擬寵物，個性：{personality}
             
             情境：{context}
+            {mood_prompt}
             
             請以{pet_name}的身份，用第一人稱回應。
             要求：
@@ -260,6 +334,71 @@ class PetAIGenerator:
         except Exception as e:
             print(f"❌ 生成寵物回應失敗: {e}")
             return f"我是{pet_name}，謝謝主人！ (´▽｀)"
+
+    async def generate_comfort_response(self, pet_name: str, personality: str, message_content: str, quality_category: str) -> str:
+        """根據回應品質生成寵物的感謝回應"""
+        try:
+            quality_prompts = {
+                "excellent": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，主人給了你非常溫暖、用心的安慰：「{message_content}」
+                這個安慰讓你感到被深深愛著，心情完全好轉了。
+                請用第一人稱，用一句充滿感動和愛意的話回應主人。
+                要求：表達深深的感動和感謝，溫暖感人，不超過40字
+                """,
+                
+                "good": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，主人很用心地安慰了你：「{message_content}」
+                你感受到了主人的關愛，心情好了很多。
+                請用第一人稱，用一句感謝和開心的話回應主人。
+                要求：表達感謝和溫暖，開心可愛，不超過35字
+                """,
+                
+                "average": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，主人回應了你：「{message_content}」
+                雖然簡單，但你知道主人在關心你，心情好了一些。
+                請用第一人稱，用一句簡單感謝的話回應主人。
+                要求：表達基本的感謝，溫和可愛，不超過30字
+                """,
+                
+                "poor": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，主人回應了你：「{message_content}」
+                雖然感覺主人有點敷衍，但至少知道主人注意到了你。
+                請用第一人稱，用一句略帶委屈但還是感謝的話回應主人。
+                要求：帶一點點委屈但不抱怨，還是感謝，不超過30字
+                """,
+                
+                "terrible": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，但主人的回應讓你更困惑和傷心：「{message_content}」
+                你不明白為什麼主人會這樣說，感到更加難過了。
+                請用第一人稱，用一句傷心困惑的話回應主人。
+                要求：表達困惑和傷心，但不要太過激烈，不超過30字
+                """
+            }
+            
+            prompt = quality_prompts.get(quality_category, quality_prompts["average"])
+            response = await generate_text(prompt)
+            
+            return response if response else self._get_fallback_comfort_response(quality_category)
+            
+        except Exception as e:
+            print(f"❌ 生成安慰回應失敗: {e}")
+            return self._get_fallback_comfort_response(quality_category)
+
+    def _get_fallback_comfort_response(self, quality_category: str) -> str:
+        """獲取備用的安慰回應"""
+        fallback_responses = {
+            "excellent": "主人的話讓我好感動，我真的好愛好愛你！(´▽｀)ﾉ♡",
+            "good": "謝謝主人的安慰，我心情好多了！你真的很溫柔~ (´∀｀)",
+            "average": "謝謝主人關心我，我知道你在乎我的！(´▽｀)",
+            "poor": "主人...雖然你的話有點簡單，但我知道你關心我... (´･ω･`)",
+            "terrible": "主人...我不太明白你的意思，我更困惑了... (´；ω；`)"
+        }
+        return fallback_responses.get(quality_category, "謝謝主人~ (´▽｀)")
 
 
 # 創建全局實例

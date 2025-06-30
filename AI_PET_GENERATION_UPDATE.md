@@ -41,8 +41,8 @@ async def generate_pet_avatar(pet_name, personality):
     appearance_keywords = extract_appearance_keywords(personality)
     
     # 2. 選擇寵物類型和藝術風格
-    pet_type = random.choice(["cat", "dog", "rabbit", ...])
-    style = random.choice(["kawaii anime", "cute cartoon", ...])
+    pet_type = random.choice(["cat", "dog", "rabbit", "fox", "bird"])
+    style = random.choice(["kawaii anime", "cute cartoon"])
     
     # 3. 構建詳細提示詞
     prompt = f"A {appearance_keywords} {pet_type}, {style}, ..."
@@ -58,7 +58,7 @@ async def generate_pet_avatar(pet_name, personality):
 ```python
 async def generate_pet_personality(pet_name):
     # 1. 選擇基礎個性模板
-    base_personality = random.choice(personality_templates)
+    base_personality = random.choice(self.personality_templates)
     
     # 2. 構建 AI 提示詞
     prompt = f"為{pet_name}創造獨特個性，基於{base_personality}..."

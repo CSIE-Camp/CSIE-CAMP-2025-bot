@@ -213,3 +213,16 @@ class AchievementManager:
 
 # 建立全域成就管理器實例
 achievement_manager = AchievementManager()
+
+
+# 全域函數，方便其他模組導入使用
+async def track_feature_usage(user_id: int, feature_name: str, ctx=None):
+    """
+    記錄功能使用狀態的全域函數
+
+    Args:
+        user_id: 使用者ID
+        feature_name: 功能名稱
+        ctx: Discord命令上下文（可選）
+    """
+    await AchievementManager.track_feature_usage(user_id, feature_name, ctx)
