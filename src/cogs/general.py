@@ -296,7 +296,6 @@ class General(commands.Cog):
             name="💰 遊戲與經濟",
             value=f"""
 /checkin — 每日簽到抽運勢，獲得金錢、隨機引言與圖片
-/scoreboard — 查看經驗值排行榜
 /game slot <金額> — 拉霸遊戲
 /game dice <金額> — 骰子比大小
 /game rps <金額> <選項> — 剪刀石頭布
@@ -318,10 +317,10 @@ class General(commands.Cog):
         )
         # MyGo
         embed.add_field(
-            name="🎵 MyGo 專屬",
+            name="🎵 MyGo/ave-mujica 專屬",
             value="""
-/mygo <關鍵字> — 搜尋 MyGO!!!!! 圖片
-/mygo_quote — 隨機 MyGO!!!!! 名言
+/mygo <關鍵字> — 搜尋 MyGO!!!!! / ave-mujica 圖片
+/quote — 隨機 MyGO!!!!! / ave-mujica 名言
 """,
             inline=False,
         )
