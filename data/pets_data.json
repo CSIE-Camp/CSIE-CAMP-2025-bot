@@ -10,7 +10,7 @@
       "owner_name": "Takala",
       "avatar_emoji": "🐱",
       "waiting_for_comfort": {
-        "timestamp": "2025-06-30T22:57:23.054753",
+        "timestamp": "2025-06-30T22:59:29.769186",
         "channel_id": 1388729813849608274,
         "comfort_timeout": 300
       }
@@ -24,8 +24,13 @@
       "adopted_date": "2025-06-30T16:33:46.398624",
       "owner_name": "☆神秘人物☆",
       "avatar_emoji": "🐹",
-      "last_fed": "2025-06-30T22:53:03.442536"
+      "last_fed": "2025-06-30T22:53:03.442536",
+      "waiting_for_comfort": {
+        "timestamp": "2025-06-30T22:59:37.825047",
+        "channel_id": 1389161979670953984,
+        "comfort_timeout": 300
+      }
     }
   },
-  "last_updated": "2025-06-30T22:57:23.054753"
+  "last_updated": "2025-06-30T22:59:37.825047"
 }
