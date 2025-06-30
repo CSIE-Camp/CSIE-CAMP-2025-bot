@@ -4,7 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 from src.utils.user_data import user_data_manager
-from src.utils.achievements import achievement_manager
+from src.utils.achievements import AchievementManager
 from src import config
 from .games.rps import RPSView
 from .games.guess import GuessButtonView
@@ -36,7 +36,7 @@ class Games(commands.Cog):
                 ephemeral=True,
             )
             user["debt"] += 1
-            await achievement_manager.check_debt_achievements(
+            await AchievementManager.check_debt_achievements(
                 interaction.user.id, user["debt"], interaction
             )
             await user_data_manager.update_user_data(interaction.user.id, user)
@@ -65,12 +65,15 @@ class Games(commands.Cog):
         await interaction.followup.send(
             f"# {result_str}\n{user_name} {msg}", ephemeral=True
         )
-        await achievement_manager.check_slot_achievements(
+        await AchievementManager.check_slot_achievements(
             interaction.user.id, max_count, interaction
         )
-        await achievement_manager.check_money_achievements(
+        await AchievementManager.check_money_achievements(
             interaction.user.id, user["money"], interaction
         )
+        
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "game_slot", interaction)
 
     @game.command(name="dice", description="骰子比大小")
     @app_commands.describe(amount="要下的賭注金額", opponent="挑戰的對手")
@@ -127,12 +130,15 @@ class Games(commands.Cog):
             await user_data_manager.update_user_data(interaction.user.id, user)
             await user_data_manager.update_user_data(opponent.id, opponent_data)
             await interaction.followup.send(result_msg)
-            await achievement_manager.check_money_achievements(
+            await AchievementManager.check_money_achievements(
                 interaction.user.id, user["money"], interaction
             )
-            await achievement_manager.check_money_achievements(
+            await AchievementManager.check_money_achievements(
                 opponent.id, opponent_data["money"], interaction
             )
+            
+            # 追蹤功能使用
+            await AchievementManager.track_feature_usage(interaction.user.id, "game_dice", interaction)
         else:
             if current_money < amount:
                 await interaction.response.send_message(
@@ -145,9 +151,12 @@ class Games(commands.Cog):
             if winnings != 0:
                 await user_data_manager.update_user_data(interaction.user.id, user)
             await interaction.followup.send(result_text)
-            await achievement_manager.check_money_achievements(
+            await AchievementManager.check_money_achievements(
                 interaction.user.id, user["money"], interaction
             )
+            
+            # 追蹤功能使用
+            await AchievementManager.track_feature_usage(interaction.user.id, "game_dice", interaction)
 
     @game.command(name="rps", description="剪刀石頭布")
     @app_commands.describe(amount="賭注金額", opponent="挑戰的對手")

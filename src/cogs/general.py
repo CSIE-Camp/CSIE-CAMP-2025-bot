@@ -15,6 +15,7 @@ import json
 from typing import Optional
 
 from src.utils.user_data import user_data_manager
+from src.utils.achievements import AchievementManager
 from src.constants import (
     DEFAULT_LEVEL,
     DEFAULT_EXP,
@@ -70,6 +71,10 @@ class General(commands.Cog):
 
         await interaction.followup.send(embed=embed)
 
+        # 追蹤功能使用並檢查成就
+        await AchievementManager.track_feature_usage(target.id, "profile", interaction)
+        await AchievementManager.check_money_achievements(target.id, money, interaction)
+
     def _calculate_required_exp(self, level: int) -> int:
         """計算升級所需經驗值"""
         return EXP_PER_LEVEL * level
@@ -124,6 +129,9 @@ class General(commands.Cog):
             )
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await interaction.response.send_message(embed=embed)
+        
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "links", interaction)
 
     def _get_game_channel_mention(self):
         # 只取第一個允許遊戲的頻道

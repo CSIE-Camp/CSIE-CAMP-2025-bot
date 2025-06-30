@@ -117,17 +117,8 @@ class PetSystem(commands.Cog):
     def save_pets_data(self):
         """保存寵物資料"""
         try:
-            # 創建可序列化的資料副本，移除 bytes 類型的 avatar_bytes
-            serializable_pets = {}
-            for user_id, pet_data in self.pets.items():
-                serializable_pet = pet_data.copy()
-                # 移除不能 JSON 序列化的 bytes 資料
-                if 'avatar_bytes' in serializable_pet:
-                    del serializable_pet['avatar_bytes']
-                serializable_pets[user_id] = serializable_pet
-            
             data = {
-                "pets": serializable_pets,
+                "pets": self.pets,
                 "last_updated": datetime.datetime.now().isoformat()
             }
             os.makedirs(os.path.dirname(self.pets_data_file), exist_ok=True)
@@ -189,15 +180,9 @@ class PetSystem(commands.Cog):
         except Exception as e:
             print(f"❌ 同步用戶好感度失敗: {e}")
 
-    async def create_pet_webhook(self, channel_or_thread, pet_name: str, pet_avatar_data = None):
+    async def create_pet_webhook(self, channel, pet_name: str, pet_avatar_data = None):
         """創建寵物 Webhook"""
         try:
-            # 如果是 Thread，需要在父頻道創建 Webhook
-            if isinstance(channel_or_thread, discord.Thread):
-                channel = channel_or_thread.parent
-            else:
-                channel = channel_or_thread
-                
             # 檢查機器人是否有管理 Webhook 的權限
             if not channel.permissions_for(channel.guild.me).manage_webhooks:
                 print(f"❌ 機器人在頻道 {channel.name} 缺少 Manage Webhooks 權限")
@@ -279,12 +264,7 @@ class PetSystem(commands.Cog):
                     # 添加表情符號前綴讓訊息更生動
                     emoji_prefix = pet.get("avatar_emoji", "🐾")
                     formatted_response = f"{response}"
-                    
-                    # 如果是在 Thread 中，需要指定 thread 參數
-                    if isinstance(channel, discord.Thread):
-                        await webhook.send(formatted_response, username=f"{emoji_prefix} {pet_name}", thread=channel)
-                    else:
-                        await webhook.send(formatted_response, username=f"{emoji_prefix} {pet_name}")
+                    await webhook.send(formatted_response, username=f"{emoji_prefix} {pet_name}")
                     await webhook.delete()  # 使用完畢後刪除 webhook
                 except Exception as e:
                     print(f"❌ Webhook 發送失敗: {e}")
@@ -446,8 +426,7 @@ class PetSystem(commands.Cog):
             webhook = await self.create_pet_webhook(thread, pet_name, avatar_bytes)
             if webhook:
                 try:
-                    # 在 Thread 中發送訊息需要指定 thread 參數
-                    await webhook.send(greeting, username=pet_name, thread=thread)
+                    await webhook.send(greeting, username=pet_name)
                     await webhook.delete()  # 使用完畢後刪除 webhook
                 except Exception as e:
                     print(f"❌ 寵物打招呼 Webhook 失敗: {e}")
@@ -593,11 +572,7 @@ class PetSystem(commands.Cog):
             if webhook:
                 try:
                     emoji_prefix = pet.get("avatar_emoji", "🐾")
-                    # 如果是在 Thread 中，需要指定 thread 參數
-                    if isinstance(interaction.channel, discord.Thread):
-                        await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}", thread=interaction.channel)
-                    else:
-                        await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
+                    await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
                     await webhook.delete()  # 使用完畢後刪除 webhook
                 except Exception as e:
                     print(f"❌ 玩球回應 Webhook 失敗: {e}")
@@ -676,11 +651,7 @@ class PetSystem(commands.Cog):
         if webhook:
             try:
                 emoji_prefix = pet.get("avatar_emoji", "🐾")
-                # 如果是在 Thread 中，需要指定 thread 參數
-                if isinstance(interaction.channel, discord.Thread):
-                    await webhook.send(response, username=f"{emoji_prefix} {pet_name}", thread=interaction.channel)
-                else:
-                    await webhook.send(response, username=f"{emoji_prefix} {pet_name}")
+                await webhook.send(response, username=f"{emoji_prefix} {pet_name}")
                 await webhook.delete()  # 使用完畢後刪除 webhook
             except Exception as e:
                 print(f"❌ 餵食回應 Webhook 失敗: {e}")
@@ -850,11 +821,7 @@ class PetSystem(commands.Cog):
                     "主人，我也很愛你哦！ ♡(˃͈ દ ˂͈ ༶ )"
                 ]
                 proud_response = random.choice(proud_responses)
-                # 如果是在 Thread 中，需要指定 thread 參數
-                if isinstance(interaction.channel, discord.Thread):
-                    await webhook.send(proud_response, username=f"{avatar_emoji} {pet_name}", thread=interaction.channel)
-                else:
-                    await webhook.send(proud_response, username=f"{avatar_emoji} {pet_name}")
+                await webhook.send(proud_response, username=f"{avatar_emoji} {pet_name}")
                 await webhook.delete()
             except Exception as e:
                 print(f"❌ 炫耀回應 Webhook 失敗: {e}")

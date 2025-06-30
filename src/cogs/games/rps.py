@@ -1,7 +1,7 @@
 import random
 import discord
 from src.utils.user_data import user_data_manager
-from src.utils.achievements import achievement_manager
+from src.utils.achievements import AchievementManager
 
 
 class RPSView(discord.ui.View):
@@ -81,5 +81,13 @@ class RPSView(discord.ui.View):
             await user_data_manager.update_user_data(winner.id, winner_data)
             await user_data_manager.update_user_data(loser.id, loser_data)
             full_result += f"\n{winner.mention} 贏得了 {self.amount} 元！"
+            
+            # 檢查金錢成就
+            await AchievementManager.check_money_achievements(winner.id, winner_data["money"])
+        
+        # 追蹤功能使用（為兩個參與者都追蹤）
+        await AchievementManager.track_feature_usage(self.challenger.id, "game_rps")
+        if not self.opponent.bot:
+            await AchievementManager.track_feature_usage(self.opponent.id, "game_rps")
 
         await channel.send(full_result)

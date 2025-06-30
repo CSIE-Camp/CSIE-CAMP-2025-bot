@@ -5,6 +5,7 @@ import json
 import datetime
 from src import config
 from src.utils.user_data import user_data_manager
+from src.utils.achievements import AchievementManager
 from src.constants import Colors, FLAGS_FILE
 import pandas as pd
 
@@ -125,6 +126,9 @@ class EasterEgg(commands.Cog):
             text=f"已找到 {len(found_flags_ids)} / {len(self.flags_data)} 個彩蛋"
         )
         await interaction.response.send_message(embed=embed)
+        
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "egg", interaction)
 
 
 async def setup(bot: commands.Bot):

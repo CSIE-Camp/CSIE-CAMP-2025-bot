@@ -14,43 +14,61 @@
     "kong_yiji": {
         "id": 3,
         "name": "孔乙己",
-        "description": "賒帳 10 次",
+        "description": "拉霸賒帳 10 次",
         "icon": "📜"
     },
     "attendance_award": {
         "id": 4,
         "name": "全勤獎",
-        "description": "連續簽到4天",
+        "description": "天天都簽到",
         "icon": "🍀"
     },
     "rich_player": {
         "id": 5,
-        "name": "小富豪",
-        "description": "擁有超過10000元",
+        "name": "炫富 bad",
+        "description": "擁有超過 10000 元的情況使用 profile",
         "icon": "💰"
     },
-    "pet_adopter": {
+    "daily": {
         "id": 6,
-        "name": "寵物愛好者",
-        "description": "成功認養一隻虛擬寵物",
-        "icon": "🐾"
+        "name": "按部就班",
+        "description": "每天都 daily 一次",
+        "icon": "📅"
     },
-    "ai_pet_master": {
+    "miss_you": {
         "id": 7,
-        "name": "AI 寵物大師",
-        "description": "成功生成 AI 寵物頭像",
-        "icon": "🎨"
+        "name": "我就想你",
+        "description": "一天內 tag bot 10 次",
+        "icon": "💬"
     },
-    "pet_whisperer": {
+    "mygo_good": {
         "id": 8,
-        "name": "寵物語者",
-        "description": "與寵物的好感度達到50以上",
-        "icon": "💕"
+        "name": "mygo 好棒",
+        "description": "使用 mygo 10 次",
+        "icon": "📝"
     },
-    "long_term_owner": {
+    "mygo_love": {
         "id": 9,
-        "name": "資深飼主",
-        "description": "與寵物相處超過7天",
-        "icon": "🏆"
+        "name": "我愛 mygo，mygo 愛我",
+        "description": "使用 mygo 25 次",
+        "icon": "📝"
+    },
+    "mygo_fan": {
+        "id": 10,
+        "name": "mygo 廚",
+        "description": "使用 mygo 50 次",
+        "icon": "📝"
+    },
+    "i_want_all": {
+        "id": 11,
+        "name": "我全都要",
+        "description": "使用所有功能",
+        "icon": "🫴"
+    },
+    "boom_light_bad": {
+        "id": 12,
+        "name": "暴雷 bad",
+        "description": "還沒 7/3 就使用 rear_room 功能",
+        "icon": "😵‍💫"
     }
 }

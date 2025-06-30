@@ -147,6 +147,69 @@ class AchievementManager:
                 user_id, "kong_yiji", ctx
             )
 
+    @staticmethod
+    async def track_feature_usage(user_id: int, feature_name: str, ctx=None):
+        """
+        記錄功能使用狀態並檢查"我全都要"成就
+
+        Args:
+            user_id: 使用者ID
+            feature_name: 功能名稱
+            ctx: Discord命令上下文（可選）
+        """
+        user = await user_data_manager.get_user(user_id)
+
+        # 確保使用者有功能使用記錄
+        if "used_features" not in user:
+            user["used_features"] = []
+
+        # 如果功能尚未使用過，加入記錄
+        if feature_name not in user["used_features"]:
+            user["used_features"].append(feature_name)
+            await user_data_manager.update_user_data(user_id, user)
+
+            # 檢查是否達成"我全都要"成就
+            await AchievementManager.check_i_want_all_achievement(user_id, ctx)
+
+    @staticmethod
+    async def check_i_want_all_achievement(user_id: int, ctx=None):
+        """
+        檢查"我全都要"成就
+        需要使用的主要功能：
+        - profile: 查看個人資料
+        - checkin: 每日簽到
+        - game_slot: 拉霸遊戲
+        - game_dice: 骰子遊戲
+        - game_rps: 剪刀石頭布
+        - mygo: MyGO相關功能
+        - note_search: 筆記搜尋
+        - links: 查看連結
+        - achievements: 查看成就
+        - egg: 查看彩蛋
+        """
+        user = await user_data_manager.get_user(user_id)
+        used_features = user.get("used_features", [])
+
+        # 定義需要使用的主要功能
+        required_features = {
+            "profile",  # 查看個人資料
+            "checkin",  # 每日簽到
+            "game_slot",  # 拉霸遊戲
+            "game_dice",  # 骰子遊戲
+            "game_rps",  # 剪刀石頭布
+            "mygo",  # MyGO相關功能
+            "note_search",  # 筆記搜尋
+            "links",  # 查看連結
+            "achievements",  # 查看成就
+            "egg",  # 查看彩蛋
+        }
+
+        # 檢查是否使用了所有必要功能
+        if required_features.issubset(set(used_features)):
+            await AchievementManager.check_and_award_achievement(
+                user_id, "i_want_all", ctx
+            )
+
 
 # 建立全域成就管理器實例
 achievement_manager = AchievementManager()

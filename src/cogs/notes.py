@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 import random
 import json
 from src.utils.llm import llm_model
+from src.utils.achievements import AchievementManager
 
 from src.constants import NOTES_FILE
 
@@ -41,6 +42,8 @@ class Notes(commands.Cog):
 
         if self.notes_json.get(keyword):
             await interaction.followup.send(self.notes_json[keyword]["content"], ephemeral=not show_publicly)
+            # 追蹤功能使用
+            await AchievementManager.track_feature_usage(interaction.user.id, "note_search", interaction)
             return
         
 
@@ -89,6 +92,9 @@ class Notes(commands.Cog):
                 status_message,
                 self.notes_json[closest_name]["content"]
             )
+            
+            # 追蹤功能使用
+            await AchievementManager.track_feature_usage(interaction.user.id, "note_search", interaction)
             # await interaction.followup.send(self.notes_json[closest_name]["content"], ephemeral=not show_publicly)
             return
 
