@@ -33,6 +33,7 @@ HUGGINGFACE_IMAGE_GEN_MODEL = os.getenv("HUGGINGFACE_IMAGE_GEN_MODEL")
 
 # ===== 檔案路徑 =====
 COGS_DIR = "src/cogs"
+DATA_DIR = "data"
 USER_DATA_FILE = os.getenv("USER_DATA_FILE", "data/user_data.json")
 
 # ===== 主要頻道 ID =====

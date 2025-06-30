@@ -19,6 +19,7 @@ class Scoreboard(commands.Cog):
             "exp": "🌟 **經驗值排行榜** 🌟",
             "achievements": "🏆 **成就排行榜** 🏆",
             "found_flags": "🥚 **彩蛋排行榜** 🥚",
+            "pet_affection": "💖 **寵物好感度排行榜** 💖",
         }
         self._load_message_ids()
         self.update_scoreboard.start()
@@ -119,7 +120,81 @@ class Scoreboard(commands.Cog):
                 formatter=lambda d: f"**{len(d.get('found_flags', []))}** 個彩蛋",
             ),
         }
+        
+        # 添加寵物好感度排行榜
+        pet_affection_embed = await self._generate_pet_affection_leaderboard()
+        if pet_affection_embed:
+            embeds["pet_affection"] = pet_affection_embed
+            
         return embeds
+
+    async def _generate_pet_affection_leaderboard(self):
+        """生成寵物好感度排行榜"""
+        try:
+            # 嘗試獲取寵物系統的 cog
+            pet_cog = self.bot.get_cog('PetSystem')
+            if not pet_cog or not hasattr(pet_cog, 'pets'):
+                return None
+            
+            pets_data = pet_cog.pets
+            if not pets_data:
+                return discord.Embed(
+                    title=self.titles["pet_affection"],
+                    description="目前還沒有人認養寵物呢！",
+                    color=discord.Color.pink()
+                )
+            
+            # 按好感度排序，取前3名
+            sorted_pets = sorted(
+                pets_data.items(),
+                key=lambda x: x[1].get("affection", 0),
+                reverse=True
+            )[:3]
+            
+            if not sorted_pets:
+                return discord.Embed(
+                    title=self.titles["pet_affection"],
+                    description="尚無資料",
+                    color=discord.Color.pink()
+                )
+            
+            medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+            lines = []
+            
+            for i, (user_id, pet_data) in enumerate(sorted_pets, 1):
+                try:
+                    user = await self.bot.fetch_user(int(user_id))
+                    user_mention = user.mention
+                except discord.NotFound:
+                    user_mention = f"`ID:{user_id}`"
+                
+                pet_name = pet_data.get("name", "未知寵物")
+                affection = pet_data.get("affection", 0)
+                
+                # 根據好感度顯示愛心等級
+                if affection >= 50:
+                    love_level = "💕💕💕"
+                elif affection >= 30:
+                    love_level = "💕💕"
+                elif affection >= 15:
+                    love_level = "💕"
+                else:
+                    love_level = "💖"
+                
+                medal = medals.get(i, f"**{i}.**")
+                lines.append(f"{medal} {user_mention} 的 **{pet_name}** {love_level}\n好感度：**{affection}**")
+            
+            description = "\n\n".join(lines) if lines else "尚無資料"
+            
+            return discord.Embed(
+                title=self.titles["pet_affection"],
+                description=description,
+                color=discord.Color.pink()
+            )
+            
+        except Exception as e:
+            print(f"❌ 生成寵物好感度排行榜時發生錯誤: {e}")
+            return None
 
     @tasks.loop(minutes=constants.SCOREBOARD_UPDATE_INTERVAL)
     async def update_scoreboard(self):

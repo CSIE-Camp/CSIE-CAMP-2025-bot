@@ -15,7 +15,7 @@ from io import BytesIO
 
 # 導入共享的 user_data_manager 實例，確保資料操作的同步與一致性
 from src.utils.user_data import user_data_manager
-from src.utils.achievements import achievement_manager
+from src.utils.achievements import AchievementManager
 from src.utils.image_gen import generate_image
 from src.constants import FORTUNE_LEVELS, QUOTE_REPLACEMENTS, ACG_QUOTES_FILE
 from src import config
@@ -77,6 +77,9 @@ class DailyCheckin(commands.Cog):
             # 如果昨天沒簽到 (中斷或首次)，則重置為 1
             new_streak = 1
 
+        if new_streak == 4:
+            await AchievementManager.check_and_award_achievement(user_id, "attendance_award", interaction)
+            
         # 抽取今日運勢
         fortune, color, quote = self._get_random_fortune()
 
@@ -132,6 +135,9 @@ class DailyCheckin(commands.Cog):
             await interaction.followup.send(embed=embed, file=file)
         else:
             await interaction.followup.send(embed=embed)
+            
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "checkin", interaction)
 
     def _get_random_fortune(self) -> tuple[str, int, str]:
         """隨機取得運勢和名言"""
@@ -181,12 +187,12 @@ class DailyCheckin(commands.Cog):
         try:
             # 檢查連續簽到成就
             if streak >= 7:
-                await achievement_manager.check_and_award_achievement(
+                await AchievementManager.check_and_award_achievement(
                     user_id, "lucky_streak", interaction
                 )
 
             # 檢查金錢成就
-            await achievement_manager.check_money_achievements(
+            await AchievementManager.check_money_achievements(
                 user_id, money, interaction
             )
         except (AttributeError, KeyError) as e:

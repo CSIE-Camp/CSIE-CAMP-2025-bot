@@ -4,6 +4,8 @@ from discord.ext import commands
 import json
 import datetime
 import random
+from src.utils.achievements import achievement_manager
+from src.utils.user_data import user_data_manager
 
 from src.constants import SCHEDULE_FILE
 
@@ -30,9 +32,10 @@ class Schedule(commands.Cog):
 
     def _get_fancy_reply(self, lesson_name, remaining_minutes, now):
         """根據目前課程、剩餘時間和當前時間生成一個有趣的額外回覆。"""
-        additional_messages: list[str] = []
+        user_data_manager.get_user(now.user.id)  # 確保用戶資料已載入
         if now.hour == 3:
-            additional_messages += [
+
+            additional_messages = [
                 "誰會想在凌晨三點找 flag ？"
             ]
         if now.hour < 3 or now.hour >= 22:
@@ -210,11 +213,56 @@ class Schedule(commands.Cog):
             "使用 /schedule 查詢當前時段課程。"
         ]
         footer_content = random.choice(footer_contents)
-        embed.set_footer(text = footer_content)
-        await interaction.response.send_message(
-            embed = embed,
-            ephemeral = True
-        )
+        embed.set_footer(text=footer_content)
+        await interaction.response.send_message(embed=embed)
+
+        # 檢查成就
+        user_id = interaction.user.id
+        today = datetime.date.today()
+        today_str = today.isoformat()
+
+        # 獲取用戶資料
+        user = await user_data_manager.get_user(user_id, interaction.user)
+
+        last_checkin_str = user.get("last_daily")
+
+        # 計算連續簽到天數
+        yesterday = today - datetime.timedelta(days=1)
+        current_streak = user.get("daily_streak", 0)
+
+        if last_checkin_str == yesterday.isoformat():
+            # 如果昨天有簽到，連續天數+1
+            new_streak = current_streak + 1
+        else:
+            # 如果昨天沒簽到 (中斷或首次)，則重置為 1
+            new_streak = 1
+
+        if new_streak == 4:
+            achievement_manager.unlock_achievement(user_id, "miss_you")
+
+        # 檢查成就
+        user_id = interaction.user.id
+        today = datetime.date.today()
+        today_str = today.isoformat()
+
+        # 獲取用戶資料
+        user = await user_data_manager.get_user(user_id, interaction.user)
+
+        last_checkin_str = user.get("last_daily")
+
+        # 計算連續簽到天數
+        yesterday = today - datetime.timedelta(days=1)
+        current_streak = user.get("daily_streak", 0)
+
+        if last_checkin_str == yesterday.isoformat():
+            # 如果昨天有簽到，連續天數+1
+            new_streak = current_streak + 1
+        else:
+            # 如果昨天沒簽到 (中斷或首次)，則重置為 1
+            new_streak = 1
+
+        if new_streak == 4:
+            achievement_manager.unlock_achievement(user_id, "miss_you")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Schedule(bot))

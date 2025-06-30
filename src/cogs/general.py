@@ -15,6 +15,7 @@ import json
 from typing import Optional
 
 from src.utils.user_data import user_data_manager
+from src.utils.achievements import AchievementManager
 from src.constants import (
     DEFAULT_LEVEL,
     DEFAULT_EXP,
@@ -118,6 +119,10 @@ class General(commands.Cog):
         )
 
         await interaction.followup.send(embed=embed)
+
+        # 追蹤功能使用並檢查成就
+        await AchievementManager.track_feature_usage(target.id, "profile", interaction)
+        await AchievementManager.check_money_achievements(target.id, money, interaction)
 
     def _calculate_required_exp(self, level: int) -> int:
         """計算升級所需經驗值"""
@@ -223,6 +228,9 @@ class General(commands.Cog):
             )
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await interaction.response.send_message(embed=embed)
+        
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "links", interaction)
 
     def _get_game_channel_mention(self):
         # 只取第一個允許遊戲的頻道
@@ -320,6 +328,23 @@ class General(commands.Cog):
             value=f"""
 @{bot_name} — 直接提及即可與 AI (Gemini) 聊天
 在特定風格頻道發言，訊息自動轉換角色風格：{style_channels_str}
+""",
+            inline=False,
+        )
+        # 寵物系統
+        embed.add_field(
+            name="🐾 虛擬寵物",
+            value="""
+/adopt <寵物名字> — 認養一隻虛擬寵物（會創建專屬討論串）
+/pet_status — 查看你的寵物狀態和好感度
+/play_ball — 跟寵物玩球遊戲
+/feed_pet — 餵食寵物（增加好感度）
+/pet_ranking — 查看好感度排行榜
+/show_off_pet — 在公共頻道炫耀你的寵物
+/pet_thread — 快速前往寵物專屬討論串
+> **🏠 專屬小窩**：每隻寵物都有專屬討論串，寵物會在裡面與你互動
+> **🌟 炫耀功能**：可以向大家展示你和寵物的感情深度
+> **🤖 AI 驅動**：寵物使用 Webhook 以自己的身份說話，彷彿真實存在
 """,
             inline=False,
         )

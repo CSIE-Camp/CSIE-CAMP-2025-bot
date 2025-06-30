@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 import json
 from src.utils.llm import llm_model
+from src.utils.achievements import AchievementManager
 
 from src.constants import NOTES_FILE
 
@@ -55,9 +56,9 @@ class Notes(commands.Cog):
         await interaction.response.defer(thinking=True)
 
         if self.notes_json.get(keyword):
-            await interaction.followup.send(
-                self.notes_json[keyword]["content"], ephemeral=not show_publicly
-            )
+            await interaction.followup.send(self.notes_json[keyword]["content"], ephemeral=not show_publicly)
+            # 追蹤功能使用
+            await AchievementManager.track_feature_usage(interaction.user.id, "note_search", interaction)
             return
 
         status_message = await interaction.followup.send(
@@ -103,7 +104,13 @@ class Notes(commands.Cog):
             await edit_message(
                 status_message, f"根據「{keyword}」搜尋到了最接近的筆記："
             )
-            await edit_message(status_message, self.notes_json[closest_name]["content"])
+            await edit_message(
+                status_message,
+                self.notes_json[closest_name]["content"]
+            )
+            
+            # 追蹤功能使用
+            await AchievementManager.track_feature_usage(interaction.user.id, "note_search", interaction)
             # await interaction.followup.send(self.notes_json[closest_name]["content"], ephemeral=not show_publicly)
             return
 

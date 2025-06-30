@@ -35,7 +35,7 @@ class Drama(commands.Cog):
         await asyncio.sleep(3)
         await starfish_webhook.send("等我一下喔，現在要抽籤對吧", username=starfish_name, avatar_url=starfish_avatar)
         await asyncio.sleep(3)
-        await starfish_webhook.send("ㄟ！惠惠，幫我抽個籤", username=starfish_name, avatar_url=starfish_avatar)
+        await starfish_webhook.send("ㄟ！大傢伙，幫我抽個籤", username=starfish_name, avatar_url=starfish_avatar)
         await asyncio.sleep(2)
         await drama_channel.send("你很煩耶，好啦，我在營隊裡也是幫你很多忙ㄟ")
         await asyncio.sleep(3)

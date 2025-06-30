@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from src.utils.achievements import achievement_manager, ACHIEVEMENTS
+from src.utils.achievements import AchievementManager, ACHIEVEMENTS
 from src.utils.user_data import user_data_manager
 from typing import Optional
 
@@ -19,7 +19,7 @@ class AchievementCog(commands.Cog):
     ):
         """顯示成就列表"""
         target_user = user or interaction.user
-        user_achievements = await achievement_manager.get_user_achievements(
+        user_achievements = await AchievementManager.get_user_achievements(
             target_user.id
         )
 
@@ -54,6 +54,9 @@ class AchievementCog(commands.Cog):
         embed.set_footer(text="繼續努力解鎖更多成就吧！")
 
         await interaction.response.send_message(embed=embed)
+        
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "achievements", interaction)
 
 
 async def setup(bot: commands.Bot):
