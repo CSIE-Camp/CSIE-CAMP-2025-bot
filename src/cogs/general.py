@@ -15,6 +15,8 @@ import json
 from typing import Optional
 
 from src.utils.user_data import user_data_manager
+from src.utils.achievements import AchievementManager
+from src.utils.achievements import achievement_manager
 from src.constants import (
     DEFAULT_LEVEL,
     DEFAULT_EXP,
@@ -41,14 +43,15 @@ class General(commands.Cog):
             self.link_list = []
 
     @app_commands.command(name="profile", description="查詢你的等級、經驗值和金錢資料")
-    async def profile(self, interaction: discord.Interaction):
+    @app_commands.describe(show="讓所有人都看到你的個人資料")
+    async def profile(self, interaction: discord.Interaction, show: bool = False):
         """查詢用戶的等級、經驗值和金錢資料
         一般使用者只能查自己，管理員可查詢任何人
         """
         # 只能查自己
         target = interaction.user
-
-        await interaction.response.defer(thinking=True)
+        ephemeral = not show
+        await interaction.response.defer(thinking=True, ephemeral=ephemeral)
         user_data = await user_data_manager.get_user(target)
 
         # 取得用戶資料
@@ -118,6 +121,11 @@ class General(commands.Cog):
         )
 
         await interaction.followup.send(embed=embed)
+
+        # 追蹤功能使用並檢查成就
+        await AchievementManager.track_feature_usage(target.id, "profile", self.bot)
+        if show:
+            await AchievementManager.check_money_achievements(target.id, money, self.bot)
 
     def _calculate_required_exp(self, level: int) -> int:
         """計算升級所需經驗值"""
@@ -223,6 +231,9 @@ class General(commands.Cog):
             )
         embed.set_footer(text="NTNU CSIE Camp 2025")
         await interaction.response.send_message(embed=embed)
+        
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "links", self.bot)
 
     def _get_game_channel_mention(self):
         # 只取第一個允許遊戲的頻道
@@ -323,6 +334,23 @@ class General(commands.Cog):
 """,
             inline=False,
         )
+        # 寵物系統
+        embed.add_field(
+            name="🐾 虛擬寵物",
+            value="""
+/adopt <寵物名字> — 認養一隻虛擬寵物（會創建專屬討論串）
+/pet_status — 查看你的寵物狀態和好感度
+/play_ball — 跟寵物玩球遊戲
+/feed_pet — 餵食寵物（增加好感度）
+/pet_ranking — 查看好感度排行榜
+/show_off_pet — 在公共頻道炫耀你的寵物
+/pet_thread — 快速前往寵物專屬討論串
+> **🏠 專屬小窩**：每隻寵物都有專屬討論串，寵物會在裡面與你互動
+> **🌟 炫耀功能**：可以向大家展示你和寵物的感情深度
+> **🤖 AI 驅動**：寵物使用 Webhook 以自己的身份說話，彷彿真實存在
+""",
+            inline=False,
+        )
         embed.set_footer(
             text="NTNU CSIE Camp 2025",
             icon_url=self.bot.user.display_avatar.url,
@@ -343,11 +371,21 @@ class General(commands.Cog):
                 value = "還想要偷看呀！",
                 inline = False
             )
-        else:
+            await AchievementManager.check_and_award_achievement(interaction.user.id, "boom_light_bad", self.bot)
+        elif date < datetime.datetime(2025, 7, 4):
             embed = discord.Embed(title = "遊戲介紹")
             embed.add_field(
                 name = "手冊連結",
                 value = "[【點我！！】](https://drive.google.com/file/d/10gHC5_721gVMX4exWC0NVeLNwWw243TA/view?usp=drivesdk)",
+                inline = False
+            )
+        else:
+            embed = discord.Embed(title = "時候還沒到喔！", color = 0xFF0000)
+            embed.add_field(
+                name = "⁉ 遊戲結束了 ⁉",
+                value = """你也太慢半拍了吧…
+`flag{||4db02ceb09e30901cd50b6e25dbabf||}`
+[不過你真的想要看也是可以啦](https://drive.google.com/file/d/10gHC5_721gVMX4exWC0NVeLNwWw243TA/view?usp=drivesdk)""",
                 inline = False
             )
         await interaction.response.send_message(embed = embed, ephemeral = True)

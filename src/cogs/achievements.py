@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from src.utils.achievements import achievement_manager, ACHIEVEMENTS
+from src.utils.achievements import AchievementManager, ACHIEVEMENTS
 from src.utils.user_data import user_data_manager
 from typing import Optional
 
@@ -19,7 +19,7 @@ class AchievementCog(commands.Cog):
     ):
         """顯示成就列表"""
         target_user = user or interaction.user
-        user_achievements = await achievement_manager.get_user_achievements(
+        user_achievements = await AchievementManager.get_user_achievements(
             target_user.id
         )
 
@@ -33,7 +33,7 @@ class AchievementCog(commands.Cog):
             # 顯示已獲得的成就
             achieved_text = ""
             for achievement in user_achievements:
-                achieved_text += f"{achievement.icon} **{achievement.name}**\n{achievement.description}\n\n"
+                achieved_text += f"{achievement.icon} **{achievement.name}**\n"
 
             embed.add_field(
                 name=f"已獲得成就 ({len(user_achievements)}/{len(ACHIEVEMENTS)})",
@@ -53,7 +53,10 @@ class AchievementCog(commands.Cog):
         embed.set_thumbnail(url=target_user.avatar.url if target_user.avatar else None)
         embed.set_footer(text="繼續努力解鎖更多成就吧！")
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "achievements", self.bot)
 
 
 async def setup(bot: commands.Bot):

@@ -7,7 +7,7 @@ NTNU CSIE Camp 2025 Discord Bot
 - 管理機器人生命週期
 
 執行方式：
-請從專案根目錄執行：python -m src.camp_bot
+請從專案根目錄執行：python start.py
 """
 
 import os

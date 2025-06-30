@@ -3,6 +3,7 @@ python-dotenv
 requests
 aiohttp
 google-genai
+google-generativeai
 huggingface_hub
 gradio_client
 pydantic

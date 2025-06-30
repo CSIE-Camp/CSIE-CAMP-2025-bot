@@ -15,7 +15,7 @@ from io import BytesIO
 
 # 導入共享的 user_data_manager 實例，確保資料操作的同步與一致性
 from src.utils.user_data import user_data_manager
-from src.utils.achievements import achievement_manager
+from src.utils.achievements import AchievementManager
 from src.utils.image_gen import generate_image
 from src.constants import FORTUNE_LEVELS, QUOTE_REPLACEMENTS, ACG_QUOTES_FILE
 from src import config
@@ -28,6 +28,7 @@ class DailyCheckin(commands.Cog):
         self.bot = bot
         # 載入 ACG 名言
         self.quotes = self._load_quotes()
+        self.checkin_count: dict[datetime.date, int] = {}
 
     def _load_quotes(self) -> list:
         """載入 ACG 名言"""
@@ -48,10 +49,17 @@ class DailyCheckin(commands.Cog):
         每日簽到抽籤功能。
         用戶簽到後會自動抽取今日運勢，並根據運勢等級獲得不同的金錢獎勵。
         """
-
         user_id = interaction.user.id
         today = datetime.date.today()
         today_str = today.isoformat()
+
+        now = datetime.datetime.now()
+        if now < datetime.datetime(now.year, now.month, now.day, 7, 50):
+            await AchievementManager.check_and_award_achievement(user_id, "early_bird", self.bot)
+            count = self.checkin_count.get(now.date(), 0)
+            if count < 3:
+                await AchievementManager.check_and_award_achievement(user_id, "early_bird_eat_worm", self.bot)
+                self.checkin_count[now.date()] = count + 1
 
         # 獲取用戶資料
         user = await user_data_manager.get_user(user_id, interaction.user)
@@ -77,6 +85,11 @@ class DailyCheckin(commands.Cog):
             # 如果昨天沒簽到 (中斷或首次)，則重置為 1
             new_streak = 1
 
+        if new_streak == 4:
+            await AchievementManager.check_and_award_achievement(
+                user_id, "attendance_award", self.bot
+            )
+            
         # 抽取今日運勢
         fortune, color, quote = self._get_random_fortune()
 
@@ -132,6 +145,9 @@ class DailyCheckin(commands.Cog):
             await interaction.followup.send(embed=embed, file=file)
         else:
             await interaction.followup.send(embed=embed)
+            
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "checkin", self.bot)
 
     def _get_random_fortune(self) -> tuple[str, int, str]:
         """隨機取得運勢和名言"""
@@ -181,12 +197,12 @@ class DailyCheckin(commands.Cog):
         try:
             # 檢查連續簽到成就
             if streak >= 7:
-                await achievement_manager.check_and_award_achievement(
+                await AchievementManager.check_and_award_achievement(
                     user_id, "lucky_streak", interaction
                 )
 
             # 檢查金錢成就
-            await achievement_manager.check_money_achievements(
+            await AchievementManager.check_money_achievements(
                 user_id, money, interaction
             )
         except (AttributeError, KeyError) as e:

@@ -45,6 +45,8 @@ DEFAULT_USER_FIELDS: Dict[str, any] = {
     "found_flags": [],
     "sign_in_streak": 0,
     "last_sign_in": None,
+    "pet_name": None,
+    "pet_affection": 0,
 }
 
 # ===== 檔案路徑 =====

@@ -4,13 +4,12 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 from src.utils.user_data import user_data_manager
-from src.utils.achievements import achievement_manager
-from src import config
-from .games.rps import RPSView
-from .games.guess import GuessButtonView
-from .games.slot import slot_game
-from .games.dice import dice_game_vs_bot
-from .games.utils import check_channel
+from src.utils.achievements import AchievementManager
+from src.cogs.games.rps import RPSView
+from src.cogs.games.guess import GuessButtonView
+from src.cogs.games.slot import slot_game
+from src.cogs.games.dice import dice_game_vs_bot
+from src.cogs.games.utils import check_channel
 
 
 class Games(commands.Cog):
@@ -36,8 +35,8 @@ class Games(commands.Cog):
                 ephemeral=True,
             )
             user["debt"] += 1
-            await achievement_manager.check_debt_achievements(
-                interaction.user.id, user["debt"], interaction
+            await AchievementManager.check_debt_achievements(
+                interaction.user.id, user["debt"], self.bot
             )
             await user_data_manager.update_user_data(interaction.user.id, user)
             return
@@ -59,14 +58,22 @@ class Games(commands.Cog):
         result_str, winnings, msg, max_count = slot_game(user, amount, symbols)
         user["money"] += winnings
         await user_data_manager.update_user_data(interaction.user.id, user)
+        user_name = interaction.user.display_name
+        if max_count > 3:
+            user_name = interaction.user.mention
         await interaction.followup.send(
-            f"# {result_str}\n{interaction.user.mention} {msg}", ephemeral=True
+            f"# {result_str}\n{user_name} {msg}", ephemeral=True
         )
-        await achievement_manager.check_slot_achievements(
-            interaction.user.id, max_count, interaction
+        await AchievementManager.check_slot_achievements(
+            interaction.user.id, max_count, self.bot
         )
-        await achievement_manager.check_money_achievements(
-            interaction.user.id, user["money"], interaction
+        await AchievementManager.check_money_achievements(
+            interaction.user.id, user["money"], self.bot
+        )
+
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(
+            interaction.user.id, "game_slot", self.bot
         )
 
     @game.command(name="dice", description="骰子比大小")
@@ -124,11 +131,16 @@ class Games(commands.Cog):
             await user_data_manager.update_user_data(interaction.user.id, user)
             await user_data_manager.update_user_data(opponent.id, opponent_data)
             await interaction.followup.send(result_msg)
-            await achievement_manager.check_money_achievements(
+            await AchievementManager.check_money_achievements(
                 interaction.user.id, user["money"], interaction
             )
-            await achievement_manager.check_money_achievements(
-                opponent.id, opponent_data["money"], interaction
+            await AchievementManager.check_money_achievements(
+                opponent.id, opponent_data["money"], self.bot
+            )
+
+            # 追蹤功能使用
+            await AchievementManager.track_feature_usage(
+                interaction.user.id, "game_dice", self.bot
             )
         else:
             if current_money < amount:
@@ -142,8 +154,13 @@ class Games(commands.Cog):
             if winnings != 0:
                 await user_data_manager.update_user_data(interaction.user.id, user)
             await interaction.followup.send(result_text)
-            await achievement_manager.check_money_achievements(
-                interaction.user.id, user["money"], interaction
+            await AchievementManager.check_money_achievements(
+					interaction.user.id, user["money"], self.bot
+            )
+
+            # 追蹤功能使用
+            await AchievementManager.track_feature_usage(
+                interaction.user.id, "game_dice", self.bot
             )
 
     @game.command(name="rps", description="剪刀石頭布")

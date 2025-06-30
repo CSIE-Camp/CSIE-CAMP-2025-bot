@@ -9,12 +9,17 @@ import aiohttp
 import random
 import json
 from types import SimpleNamespace
+from datetime import datetime
+
 from src.utils.prompt import MYGO_QUOTE_SIMILAR_PROMPT, MYGO_CHARACTER_GEN_PROMPT
 from src import config
 from src.utils.llm import llm_model
 from src.constants import MYGO_FILE
 import io
 from datetime import datetime
+from src.utils.achievements import AchievementManager
+from src.utils.user_data import user_data_manager
+
 
 class MyGo(commands.Cog):
     """Cog for MyGo related commands."""
@@ -38,6 +43,31 @@ class MyGo(commands.Cog):
     async def mygo_slash(self, interaction: discord.Interaction, keyword: str):
         """Searches for a MyGo image."""
         await self.handle_mygo_search(interaction, keyword)
+        
+        user = user_data_manager.get_user(interaction.user.id)
+        mygo_date = user.get("mygo_search_date", datetime.now().date())
+        mygo_times = user.get("today_mygo_search_times", 0)
+        if mygo_date != datetime.now().date():
+            # Reset daily search count if it's a new day
+            user["mygo_search_date"] = datetime.now().date()
+            user["today_mygo_search_times"] = 1
+            mygo_times = 1
+        if mygo_times == 10:
+            await AchievementManager.check_and_award_achievement(
+                interaction.user.id, "mygo_good", self.bot
+            )
+        elif mygo_times == 25:
+            await AchievementManager.check_and_award_achievement(
+                interaction.user.id, "mygo_love", self.bot
+            )
+        elif mygo_times == 50:
+            await AchievementManager.check_and_award_achievement(
+                interaction.user.id, "mygo_fan", self.bot
+            )
+        
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(interaction.user.id, "mygo", self.bot)
+
 
     @app_commands.command(name="quote", description="隨機取得一句 MyGo 經典台詞")
     async def quote(self, interaction: discord.Interaction):

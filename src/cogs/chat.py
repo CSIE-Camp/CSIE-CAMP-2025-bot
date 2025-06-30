@@ -7,6 +7,10 @@ from discord.ext import commands
 
 from src.utils.prompt import BOT_PROMPT
 from src.utils.llm import llm_model
+from datetime import datetime
+
+from src.utils.achievements import achievement_manager
+from src.utils.user_data import user_data_manager
 
 
 class Chat(commands.Cog):
@@ -37,6 +41,32 @@ class Chat(commands.Cog):
                 )
                 return
             await self.handle_llm_response(message)
+
+                # 檢查成就
+        user_id = message.user.id
+        today = datetime.date.today()
+        today_str = today.isoformat()
+
+        # 獲取用戶資料
+        user = await user_data_manager.get_user(user_id, message.author)
+
+        last_checkin_str = user.get("last_tag_bot")
+
+        # 計算連續簽到天數
+        yesterday = today - datetime.timedelta(days=1)
+        current_streak = user.get("tag_bot_streak", 0)
+
+        if last_checkin_str == yesterday.isoformat():
+            # 如果昨天有簽到，連續天數+1
+            new_streak = current_streak + 1
+        else:
+            # 如果昨天沒簽到 (中斷或首次)，則重置為 1
+            new_streak = 1
+
+        if new_streak == 4:
+            achievement_manager.unlock_achievement(user_id, "daily", self.bot)
+
+    
 
     async def handle_llm_response(self, message: discord.Message):
         """Handle a response from the LLM."""
