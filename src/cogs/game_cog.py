@@ -5,12 +5,11 @@ from discord.ext import commands
 from typing import Optional
 from src.utils.user_data import user_data_manager
 from src.utils.achievements import AchievementManager
-from src import config
-from .games.rps import RPSView
-from .games.guess import GuessButtonView
-from .games.slot import slot_game
-from .games.dice import dice_game_vs_bot
-from .games.utils import check_channel
+from src.cogs.games.rps import RPSView
+from src.cogs.games.guess import GuessButtonView
+from src.cogs.games.slot import slot_game
+from src.cogs.games.dice import dice_game_vs_bot
+from src.cogs.games.utils import check_channel
 
 
 class Games(commands.Cog):
@@ -71,9 +70,11 @@ class Games(commands.Cog):
         await AchievementManager.check_money_achievements(
             interaction.user.id, user["money"], interaction
         )
-        
+
         # 追蹤功能使用
-        await AchievementManager.track_feature_usage(interaction.user.id, "game_slot", interaction)
+        await AchievementManager.track_feature_usage(
+            interaction.user.id, "game_slot", interaction
+        )
 
     @game.command(name="dice", description="骰子比大小")
     @app_commands.describe(amount="要下的賭注金額", opponent="挑戰的對手")
@@ -136,9 +137,11 @@ class Games(commands.Cog):
             await AchievementManager.check_money_achievements(
                 opponent.id, opponent_data["money"], interaction
             )
-            
+
             # 追蹤功能使用
-            await AchievementManager.track_feature_usage(interaction.user.id, "game_dice", interaction)
+            await AchievementManager.track_feature_usage(
+                interaction.user.id, "game_dice", interaction
+            )
         else:
             if current_money < amount:
                 await interaction.response.send_message(
@@ -154,9 +157,11 @@ class Games(commands.Cog):
             await AchievementManager.check_money_achievements(
                 interaction.user.id, user["money"], interaction
             )
-            
+
             # 追蹤功能使用
-            await AchievementManager.track_feature_usage(interaction.user.id, "game_dice", interaction)
+            await AchievementManager.track_feature_usage(
+                interaction.user.id, "game_dice", interaction
+            )
 
     @game.command(name="rps", description="剪刀石頭布")
     @app_commands.describe(amount="賭注金額", opponent="挑戰的對手")
