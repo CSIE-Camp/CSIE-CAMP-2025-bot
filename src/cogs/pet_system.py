@@ -48,7 +48,117 @@ from src.utils.llm import generate_text
 from src.utils.pet_ai import pet_ai_generator
 from src.utils.achievements import AchievementManager, track_feature_usage
 from src.utils.image_gen import generate_image
+from discord import ui
 
+class BallSelectionView(ui.View):
+    def __init__(self, original_interaction: discord.Interaction, pet_system_cog):
+        super().__init__(timeout=15.0)
+        self.original_interaction = original_interaction
+        self.cog = pet_system_cog
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.original_interaction.user.id:
+            await interaction.response.send_message("這不是你的寵物，不能幫牠決定喔！", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+        try:
+            user_id = str(self.original_interaction.user.id)
+            pet_name = self.cog.pets[user_id]['name']
+            await self.original_interaction.edit_original_response(content=f"**{pet_name}** 等不到你的選擇，自己跑去玩了。", embed=None, view=self)
+        except (discord.NotFound, KeyError):
+            pass # 訊息可能已被刪除或寵物資料已變更
+
+    async def _handle_ball_selection(self, interaction: discord.Interaction, ball_emoji: str):
+        # 停用所有按鈕
+        for item in self.children:
+            item.disabled = True
+
+        user_id = str(interaction.user.id)
+        pet = self.cog.pets[user_id]
+        pet_name = pet["name"]
+        pet_description = pet["description"]
+
+        # 隨機決定寵物的反應
+        mood = random.randint(1, 3)
+        affection_gain = 0
+        
+        if mood == 1:
+            context = f"主人給我一個{ball_emoji}球，但我不是很感興趣"
+            result_msg = f"**{pet_name}** 對這個球不太感興趣"
+            color = 0xff6b6b
+        elif mood == 2:
+            context = f"主人給我一個{ball_emoji}球，我覺得還不錯！"
+            result_msg = f"**{pet_name}** 覺得這個球還不錯！"
+            affection_gain = 1
+            color = 0xffd93d
+        else:
+            context = f"主人給我一個{ball_emoji}球，我超級喜歡！"
+            result_msg = f"**{pet_name}** 超喜歡這個球！"
+            affection_gain = 2
+            color = 0x6bcf7f
+
+        # 顯示 "正在輸入..."
+        async with interaction.channel.typing():
+            # 生成寵物的 AI 回應
+            pet_response = await pet_ai_generator.generate_pet_response(pet_name, pet_description, context)
+
+            # 更新好感度
+            if affection_gain > 0:
+                self.cog.increase_affection(user_id, affection_gain)
+
+            # 更新訊息
+            new_embed = discord.Embed(
+                title="🎾 玩球結果",
+                description=result_msg,
+                color=color
+            )
+            current_affection = self.cog.pets[user_id].get("affection", 0)
+            new_embed.add_field(name="💖 目前好感度", value=f"{current_affection} (+{affection_gain})" if affection_gain > 0 else str(current_affection), inline=True)
+            
+            await self.original_interaction.edit_original_response(embed=new_embed, view=self)
+            
+            # 寵物使用 Webhook 回應
+            webhook = await self.cog.create_pet_webhook(interaction.channel, pet_name, pet.get("avatar"))
+            if webhook:
+                try:
+                    emoji_prefix = pet.get("avatar_emoji", "🐾")
+                    await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}", thread=interaction.channel)
+                    await webhook.delete()
+                except Exception as e:
+                    print(f"❌ 玩球回應 Webhook 失敗: {e}")
+                    emoji_prefix = pet.get("avatar_emoji", "🐾")
+                    await interaction.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}", allowed_mentions=discord.AllowedMentions.none())
+            else:
+                emoji_prefix = pet.get("avatar_emoji", "🐾")
+                await interaction.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}", allowed_mentions=discord.AllowedMentions.none())
+
+        # 追蹤功能使用
+        await track_feature_usage(interaction.user.id, "pet")
+        self.stop()
+
+    @ui.button(label="🏀", style=discord.ButtonStyle.secondary)
+    async def basketball(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.defer()
+        await self._handle_ball_selection(interaction, "🏀")
+
+    @ui.button(label="⚽", style=discord.ButtonStyle.secondary)
+    async def soccer(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.defer()
+        await self._handle_ball_selection(interaction, "⚽")
+
+    @ui.button(label="🏐", style=discord.ButtonStyle.secondary)
+    async def volleyball(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.defer()
+        await self._handle_ball_selection(interaction, "🏐")
+
+    @ui.button(label="🎾", style=discord.ButtonStyle.secondary)
+    async def tennis(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.defer()
+        await self._handle_ball_selection(interaction, "🎾")
 
 class PetSystem(commands.Cog):
     """虛擬寵物養成系統"""
@@ -619,7 +729,7 @@ class PetSystem(commands.Cog):
             embed.add_field(name="📅 認養日期", value=datetime.datetime.now().strftime("%Y-%m-%d"), inline=True)
             embed.add_field(
                 name="🎮 互動指令", 
-                value="• `/pet_status` - 查看寵物狀態\n• `/play_ball` - 跟寵物玩球\n• `/feed_pet` - 餵食寵物", 
+                value="• `/pet_status` - 查看寵物狀態\n• `/play_ball` - 跟寵物玩球\n• `/feed_pet` - 餵食寵物\n另外，每天可以跟你的寵物聊天互動喔！", 
                 inline=False
             )
             embed.set_footer(text="你的寵物會定時與你互動，記得多關心它哦！")
@@ -717,87 +827,8 @@ class PetSystem(commands.Cog):
             color=0xffd700
         )
         
-        await interaction.response.send_message(embed=embed)
-        message = await interaction.original_response()
-
-        # 加入球類選項
-        ball_reactions = ["🏀", "⚽", "🏐", "🎾"]
-        for ball in ball_reactions:
-            await message.add_reaction(ball)
-
-        def check(reaction, user):
-            return user == interaction.user and str(reaction.emoji) in ball_reactions and reaction.message.id == message.id
-
-        try:
-            reaction, user = await self.bot.wait_for('reaction_add', timeout=15.0, check=check)
-            
-            # 隨機決定寵物的反應
-            mood = random.randint(1, 3)
-            affection_gain = 0
-            
-            # 使用 AI 生成玩球回應
-            pet_name = pet["name"]
-            pet_description = pet["description"]
-            ball_emoji = str(reaction.emoji)
-            
-            if mood == 1:
-                context = f"主人給我一個{ball_emoji}球，但我不是很感興趣"
-                result_msg = f"**{pet_name}** 對這個球不太感興趣"
-                color = 0xff6b6b
-            elif mood == 2:
-                context = f"主人給我一個{ball_emoji}球，我覺得還不錯！"
-                result_msg = f"**{pet_name}** 覺得這個球還不錯！"
-                affection_gain = 1
-                color = 0xffd93d
-            else:
-                context = f"主人給我一個{ball_emoji}球，我超級喜歡！"
-                result_msg = f"**{pet_name}** 超喜歡這個球！"
-                affection_gain = 2
-                color = 0x6bcf7f
-
-            # 生成寵物的 AI 回應
-            pet_response = await pet_ai_generator.generate_pet_response(pet_name, pet_description, context)
-
-            # 更新好感度
-            if affection_gain > 0:
-                self.increase_affection(user_id, affection_gain)
-
-            # 更新訊息
-            new_embed = discord.Embed(
-                title="🎾 玩球結果",
-                description=result_msg,
-                color=color
-            )
-            
-            current_affection = pet.get("affection", 0) + affection_gain
-            new_embed.add_field(name="💖 目前好感度", value=str(current_affection), inline=True)
-            
-            await message.edit(embed=new_embed)
-            
-            # 寵物使用 Webhook 回應
-            await asyncio.sleep(1)
-            webhook = await self.create_pet_webhook(interaction.channel, pet_name, pet.get("avatar"))
-            if webhook:
-                try:
-                    emoji_prefix = pet.get("avatar_emoji", "🐾")
-                    if isinstance(interaction.channel, discord.Thread):
-                        await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}", thread=interaction.channel)
-                    else:
-                        await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
-                    await webhook.delete()
-                except Exception as e:
-                    print(f"❌ 玩球回應 Webhook 失敗: {e}")
-                    emoji_prefix = pet.get("avatar_emoji", "🐾")
-                    await interaction.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
-            else:
-                emoji_prefix = pet.get("avatar_emoji", "🐾")
-                await interaction.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
-
-            # 追蹤功能使用
-            await track_feature_usage(interaction.user.id, "pet")
-
-        except asyncio.TimeoutError:
-            await message.edit(content=f"**{pet_name}** 等不到你的選擇，自己跑去玩了。", embed=None, view=None)
+        view = BallSelectionView(interaction, self)
+        await interaction.response.send_message(embed=embed, view=view)
 
     @app_commands.command(name="feed_pet", description="餵食你的寵物")
     async def feed_pet(self, interaction: discord.Interaction):
