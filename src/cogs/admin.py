@@ -8,6 +8,33 @@ from src import config
 
 
 class Admin(commands.Cog):
+    @app_commands.command(
+        name="scoreboard",
+        description="[管理員] 強制立即更新排行榜 (Scoreboard)",
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.default_permissions(
+        discord.Permissions(administrator=True), manage_messages=True
+    )
+    async def scoreboard(self, interaction: discord.Interaction):
+        """強制立即更新排行榜"""
+        await interaction.response.defer(ephemeral=True)
+        scoreboard_cog = self.bot.get_cog("Scoreboard")
+        if scoreboard_cog:
+            await scoreboard_cog.update_scoreboard()
+            embed = discord.Embed(
+                title=f"{Emojis.SUCCESS} 排行榜已強制更新",
+                description="排行榜已立即更新。",
+                color=Colors.SUCCESS,
+            )
+        else:
+            embed = discord.Embed(
+                title=f"{Emojis.ERROR} 找不到 Scoreboard 模組",
+                description="請確認 Scoreboard cog 是否已正確載入。",
+                color=Colors.ERROR,
+            )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.user_data = user_data_manager
