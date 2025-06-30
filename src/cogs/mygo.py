@@ -38,7 +38,7 @@ class MyGo(commands.Cog):
         except (FileNotFoundError, json.JSONDecodeError):
             self.mygo_quotes = []
 
-    @app_commands.command(name="mygo", description="從 MyGO!!!!! 圖庫中搜尋一張圖片。")
+    @app_commands.command(name="mygo", description="從 MyGO!!!!! 和 ave-mujica 圖庫中搜尋一張圖片。")
     @app_commands.describe(keyword="要搜尋的台詞或關鍵字")
     async def mygo_slash(self, interaction: discord.Interaction, keyword: str):
         """Searches for a MyGo image."""
@@ -69,13 +69,13 @@ class MyGo(commands.Cog):
         await AchievementManager.track_feature_usage(interaction.user.id, "mygo", self.bot)
 
 
-    @app_commands.command(name="quote", description="隨機取得一句 MyGo 經典台詞")
+    @app_commands.command(name="quote", description=f"隨機取得一句和 MyGo/ave-mujica 經典台詞")
     async def quote(self, interaction: discord.Interaction):
         """隨機回傳一個 MyGo 的名言"""
         try:
             if not self.mygo_quotes:
                 await interaction.response.send_message(
-                    "抱歉，我找不到任何 MyGo 的名言。", ephemeral=True
+                    "抱歉，我找不到任何 MyGo/ave-mujica 的名言。", ephemeral=True
                 )
                 return
 
@@ -162,12 +162,12 @@ class MyGo(commands.Cog):
                     embed = discord.Embed(description=image_alt, color=random_color, timestamp=datetime.now())
                     embed.set_image(url=image_url)
                     embed.set_footer(text="mygo 廚 in.")
-                    await send('從最相關的多張圖片中隨機選擇一張',embed=embed)
+                    await send('我找找喔，你是說這張對吧',embed=embed)
                     return
 
             # --- If no direct match, show searching message and proceed to LLM fallbacks ---
             status_message = await send(
-                f"找不到「{keyword}」的完全符合圖片，讓我試試其他方法..."
+                f"我沒找到包含{keyword}這段話的圖片誒，還是你是說這張呢？"
             )
 
             if not self.model or not self.mygo_quotes:
@@ -189,7 +189,7 @@ class MyGo(commands.Cog):
                 quotes_str = "\n".join(
                     item["alt"] for item in self.mygo_quotes if isinstance(item, dict) and "alt" in item
                 )
-                prompt1 = f"從以下《MyGO!!!!!》的台詞列表中，選出與使用者輸入的「{keyword}」語意最接近或最相關的一句台詞。請「只」回傳那句台詞，不要包含任何其他文字或引號。\n\n台詞列表：\n{quotes_str}"
+                prompt1 = f"從以下《MyGO!!!!!》以及《ave-mujica》的台詞列表中，選出與使用者輸入的「{keyword}」語意最接近或最相關的一句台詞。請「只」回傳那句台詞，不要包含任何其他文字或引號。\n\n台詞列表：\n{quotes_str}"
 
                 closest_quote_response = await self.model.generate_content_async(
                     prompt1
@@ -217,7 +217,7 @@ class MyGo(commands.Cog):
                         status_message,
                         f"還是找不到「{keyword}」的相關圖片，讓我想想... 🤔",
                     )
-                prompt2 = f"「{keyword}」這句話聽起來像是 MyGO!!!!! 裡的哪個角色會說的台詞？請你扮演那個角色，並用該角色的口吻，生成一句全新的、風格相似的台詞。"
+                prompt2 = f"「{keyword}」這句話聽起來像是 MyGO!!!!!/ave-mujica 裡的哪個角色會說的台詞？請你扮演那個角色，並用該角色的口吻，生成一句全新的、風格相似的台詞。"
                 llm_response = await self.model.generate_content_async(prompt2)
                 if status_message:
                     await edit_message(
@@ -227,7 +227,7 @@ class MyGo(commands.Cog):
                 await send(llm_response.text)
 
         except Exception as e:
-            print(f"處理 MyGo 搜尋時發生未預期錯誤: {e}")
+            print(f"處理 MyGo/ave-mujica 搜尋時發生未預期錯誤: {e}")
             if status_message:
                 await edit_message(
                     status_message,
