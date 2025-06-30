@@ -492,24 +492,24 @@ class PetSystem(commands.Cog):
             
             # 寵物愛好者成就 - 認養寵物
             if user_str in self.pets:
-                await self.bot.achievement_manager.check_and_award_achievement(user_id, "pet_adopter")
+                await self.bot.achievement_manager.check_and_award_achievement(user_id, "pet_adopter", self.bot)
             
             # AI 寵物大師成就 - 成功生成 AI 頭像
             if has_ai_avatar:
-                await self.bot.achievement_manager.check_and_award_achievement(user_id, "ai_pet_master")
+                await self.bot.achievement_manager.check_and_award_achievement(user_id, "ai_pet_master", self.bot)
             
             # 寵物語者成就 - 好感度達到50
             if user_str in self.pets:
                 affection = self.pets[user_str].get("affection", 0)
                 if affection >= 50:
-                    await self.bot.achievement_manager.check_and_award_achievement(user_id, "pet_whisperer")
+                    await self.bot.achievement_manager.check_and_award_achievement(user_id, "pet_whisperer", self.bot)
             
             # 資深飼主成就 - 相處超過7天
             if user_str in self.pets:
                 adopted_date = datetime.datetime.fromisoformat(self.pets[user_str]["adopted_date"])
                 days_together = (datetime.datetime.now() - adopted_date).days
                 if days_together >= 7:
-                    await self.bot.achievement_manager.check_and_award_achievement(user_id, "long_term_owner")
+                    await self.bot.achievement_manager.check_and_award_achievement(user_id, "long_term_owner", self.bot)
                     
         except Exception as e:
             print(f"❌ 檢查寵物成就失敗: {e}")

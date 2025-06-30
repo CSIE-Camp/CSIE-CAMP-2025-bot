@@ -97,7 +97,8 @@ class EasterEgg(commands.Cog):
 
         if not found_flags_ids:
             await interaction.response.send_message(
-                f"{interaction.user.mention} 你還沒有找到任何彩蛋喔！"
+                f"{interaction.user.mention} 你還沒有找到任何彩蛋喔！",
+                ephemeral = True
             )
             return
 
