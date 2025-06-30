@@ -36,9 +36,11 @@ COGS_DIR = "src/cogs"
 DATA_DIR = "data"
 USER_DATA_FILE = os.getenv("USER_DATA_FILE", "data/user_data.json")
 
+
 # ===== 主要頻道 ID =====
 SCOREBOARD_CHANNEL_ID = get_int_env("SCOREBOARD_CHANNEL_ID")
 ANNOUNCEMENT_CHANNEL_ID = get_int_env("ANNOUNCEMENT_CHANNEL_ID")
+MAIN_ANNOUNCEMENT_CHANNEL_ID = get_int_env("MAIN_ANNOUNCEMENT_CHANNEL_ID")
 
 # ===== 風格轉換頻道 ID =====
 STYLE_TRANSFER_WENYAN_CHANNEL_ID = get_int_env("STYLE_TRANSFER_WENYAN_CHANNEL_ID")

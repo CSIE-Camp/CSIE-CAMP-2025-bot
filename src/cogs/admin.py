@@ -182,7 +182,8 @@ class Admin(commands.Cog):
     )
     async def announce(self, interaction: discord.Interaction, message: str):
         await interaction.response.defer(ephemeral=True)
-        channel_id = getattr(config, "ANNOUNCEMENT_CHANNEL_ID", None)
+        # 優先使用 MAIN_ANNOUNCE_CHANNEL_ID，其次 ANNOUNCEMENT_CHANNEL_ID
+        channel_id = getattr(config, "MAIN_ANNOUNCEMENT_CHANNEL_ID", None)
         channel = self.bot.get_channel(channel_id) if channel_id else None
         if channel:
             await channel.send(message)
@@ -194,7 +195,7 @@ class Admin(commands.Cog):
         else:
             embed = discord.Embed(
                 title=f"{Emojis.ERROR} 找不到公告頻道",
-                description="請確認 ANNOUNCEMENT_CHANNEL_ID 是否正確設定。",
+                description="請確認 MAIN_ANNOUNCE_CHANNEL_ID 或 ANNOUNCEMENT_CHANNEL_ID 是否正確設定。",
                 color=Colors.ERROR,
             )
         await interaction.followup.send(embed=embed, ephemeral=True)
@@ -216,14 +217,16 @@ class Admin(commands.Cog):
             "- 每天簽到賺經驗，累積成就，還有機會發現隱藏彩蛋！\n"
             "- 和大家一起玩小遊戲、互動聊天，讓營隊生活更有趣。\n"
             "- 查詢自己的等級、金錢、成就、彩蛋收集進度等。\n"
-            "- 更多功能和驚喜，請直接輸入 `/` 查看所有指令！\n\n"
+            "- 更多功能和驚喜，請直接輸入 `/` 查看所有指令！\n"
+            "- 或是輸入 /help 來獲取幫助資訊。\n\n"
             "💡 **小提醒**\n"
             "- 有任何問題或建議，歡迎隨時 @管理員 或私訊我們！\n"
             "- 如果你發現有趣的彩蛋，記得和朋友分享哦！\n\n"
             "祝大家在營隊玩得開心、交到好朋友，也別忘了每天來找我玩！🎉\n"
             "— 你的 Discord 小夥伴 大傢伙"
         )
-        channel_id = getattr(config, "ANNOUNCEMENT_CHANNEL_ID", None)
+
+        channel_id = getattr(config, "MAIN_ANNOUNCEMENT_CHANNEL_ID", None)
         channel = self.bot.get_channel(channel_id) if channel_id else None
         if channel:
             await channel.send(intro_message)
@@ -236,7 +239,7 @@ class Admin(commands.Cog):
         else:
             embed = discord.Embed(
                 title=f"{Emojis.ERROR} 找不到公告頻道",
-                description="請確認 ANNOUNCEMENT_CHANNEL_ID 是否正確設定。",
+                description="請確認 MAIN_ANNOUNCE_CHANNEL_ID 或 ANNOUNCEMENT_CHANNEL_ID 是否正確設定。",
                 color=Colors.ERROR,
             )
             await interaction.followup.send(embed=embed, ephemeral=True)

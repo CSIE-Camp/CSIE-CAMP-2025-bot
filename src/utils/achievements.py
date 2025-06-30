@@ -12,6 +12,7 @@ import json
 import os
 from src.utils.user_data import user_data_manager
 
+
 class Achievement:
     """成就類別"""
 
@@ -61,7 +62,7 @@ class AchievementManager:
 
     @staticmethod
     async def check_and_award_achievement(
-        user_id: int, achievement_id: str, ctx: commands.Bot|commands.Context = None
+        user_id: int, achievement_id: str, ctx: commands.Bot | commands.Context = None
     ) -> bool:
         """
         檢查並授予成就
@@ -106,7 +107,7 @@ class AchievementManager:
                 description=f"{user_obj.mention} 達成了成就 **{achievement.icon} {achievement.name}**",
                 color=discord.Color.gold(),
             )
-            channel = await bot.fetch_channel(os.getenv('ANNOUNCEMENT_CHANNEL_ID'))
+            channel = await bot.fetch_channel(os.getenv("ANNOUNCEMENT_CHANNEL_ID"))
             await channel.send(embed=embed)
 
         return True
