@@ -47,6 +47,7 @@ import asyncio
 import json
 import os
 import base64
+import shutil
 from typing import Dict, Any, Optional
 from io import BytesIO
 
@@ -163,38 +164,54 @@ class PetSystem(commands.Cog):
         """Cog 卸載時清理任務"""
         if hasattr(self, 'timer_task'):
             self.timer_task.cancel()
+        self.save_pets_data() # 確保在關閉時保存資料
 
     def load_pets_data(self):
         """載入寵物資料"""
         try:
             if os.path.exists(self.pets_data_file):
-                with open(self.pets_data_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    loaded_pets = data.get("pets", {})
+                with open(self.pets_data_file, 'r', encoding='utf-8') as f:
+                    # 讀取原始資料
+                    raw_data = json.load(f)
                     
-                    # 將頭像 base64 字串轉換回 bytes
-                    for user_id, pet_data in loaded_pets.items():
-                        if "avatar" in pet_data and pet_data["avatar"] and isinstance(pet_data["avatar"], str):
+                    # 處理 base64 編碼的頭像
+                    self.pets = {}
+                    for user_id, pet_data in raw_data.items():
+                        if pet_data and pet_data.get("avatar") and isinstance(pet_data["avatar"], str):
                             try:
+                                # 將 base64 字串解碼回 bytes
                                 pet_data["avatar"] = base64.b64decode(pet_data["avatar"])
-                            except (base64.binascii.Error, TypeError):
-                                pet_data["avatar"] = None # 如果解碼失敗，設為 None
+                            except (base64.binascii.Error, ValueError) as e:
+                                print(f"⚠️ Base64 解碼失敗 for user {user_id}: {e}. 設置 avatar 為 None.")
+                                pet_data["avatar"] = None
+                        
+                        # 確保每個寵物都有 comfort_lock
+                        if user_id not in self.comfort_locks:
+                            self.comfort_locks[user_id] = asyncio.Lock()
+                        
                         self.pets[user_id] = pet_data
-
-                    self.pet_timers = {}
-                    
-                    # 重建定時器
-                    for user_id, pet in self.pets.items():
-                        self.pet_timers[user_id] = self.generate_all_timers()
-                    
-                    # 啟動時同步用戶資料中的寵物好感度
-                    asyncio.create_task(self._sync_all_user_affection())
-                    
-                print(f"📂 已載入 {len(self.pets)} 隻寵物的資料")
+            else:
+                self.pets = {}
+        except json.JSONDecodeError as e:
+            print(f"❌ 載入寵物資料失敗 (JSONDecodeError): {e}")
+            print("⚠️ 偵測到寵物資料檔案格式錯誤，將嘗試備份並重置。")
+            self.backup_and_reset_pets_data()
         except Exception as e:
             print(f"❌ 載入寵物資料失敗: {e}")
             self.pets = {}
-            self.pet_timers = {}
+
+    def backup_and_reset_pets_data(self):
+        """備份並重置寵物資料檔案"""
+        if os.path.exists(self.pets_data_file):
+            backup_file = self.pets_data_file + ".bak"
+            shutil.copy(self.pets_data_file, backup_file)
+            print(f"📋 已將損壞的寵物資料備份至: {backup_file}")
+        
+        # 建立一個空的 JSON 檔案
+        with open(self.pets_data_file, 'w', encoding='utf-8') as f:
+            json.dump({}, f)
+        print("🔄 已建立新的空白寵物資料檔案。")
+        self.pets = {}
 
     async def _sync_all_user_affection(self):
         """同步所有用戶的寵物好感度"""
@@ -222,22 +239,19 @@ class PetSystem(commands.Cog):
     def save_pets_data(self):
         """保存寵物資料"""
         try:
-            # 創建可序列化的寵物資料副本
-            serializable_pets = {}
+            # 創建一個可序列化的副本
+            pets_to_save = {}
             for user_id, pet_data in self.pets.items():
-                pet_copy = pet_data.copy()
-                # 將頭像 bytes 轉換為 base64 字串以便序列化
-                if "avatar" in pet_copy and isinstance(pet_copy["avatar"], bytes):
-                    pet_copy["avatar"] = base64.b64encode(pet_copy["avatar"]).decode('utf-8')
-                serializable_pets[user_id] = pet_copy
-            
-            data = {
-                "pets": serializable_pets,
-                "last_updated": datetime.datetime.now().isoformat()
-            }
-            os.makedirs(os.path.dirname(self.pets_data_file), exist_ok=True)
-            with open(self.pets_data_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+                if not pet_data: continue # 跳過空的寵物資料
+                
+                serializable_pet = pet_data.copy()
+                # 將頭像 bytes 轉換為 base64 字串以便儲存
+                if serializable_pet.get("avatar") and isinstance(serializable_pet["avatar"], bytes):
+                    serializable_pet["avatar"] = base64.b64encode(serializable_pet["avatar"]).decode('utf-8')
+                pets_to_save[user_id] = serializable_pet
+
+            with open(self.pets_data_file, 'w', encoding='utf-8') as f:
+                json.dump(pets_to_save, f, indent=4, ensure_ascii=False)
         except Exception as e:
             print(f"❌ 保存寵物資料失敗: {e}")
 
@@ -983,74 +997,97 @@ class PetSystem(commands.Cog):
             return
 
         user_id = str(message.author.id)
-        if user_id not in self.pets:
+
+        # 檢查用戶是否有寵物，以及寵物是否在等待安慰
+        if user_id not in self.pets or not self.pets[user_id].get("waiting_for_comfort"):
             return
 
-        pet = self.pets.get(user_id)
-        if not pet or not pet.get("waiting_for_comfort"):
+        pet = self.pets[user_id]
+        comfort_info = pet["waiting_for_comfort"]
+
+        # 檢查訊息是否在正確的頻道 (寵物 Thread)
+        if message.channel.id != comfort_info["channel_id"]:
             return
 
-        waiting_info = pet["waiting_for_comfort"]
-        if message.channel.id != waiting_info["channel_id"]:
-            return
-
-        # 使用鎖確保一次只處理一個安慰訊息
+        # 獲取該用戶的鎖，防止同時處理多個安慰訊息
         lock = self.comfort_locks.get(user_id)
         if not lock or lock.locked():
-            return
+            return # 如果沒有鎖或鎖已被佔用，則忽略
 
         async with lock:
-            # 再次檢查狀態，防止競爭條件
-            pet = self.pets.get(user_id)
-            if not pet or not pet.get("waiting_for_comfort"):
+            # 再次檢查，因為在等待鎖的過程中狀態可能已改變
+            if not self.pets[user_id].get("waiting_for_comfort"):
                 return
 
-            # 清除等待狀態
-            del self.pets[user_id]["waiting_for_comfort"]
-            self.save_pets_data()
-
-            pet_name = pet["name"]
-            pet_description = pet["description"]
-            
-            async with message.channel.typing():
-                # 分析安慰訊息品質
-                analysis_result = await pet_ai_generator.analyze_comfort_message(pet_name, pet_description, message.content)
-                score = analysis_result["score"]
-                reasoning = analysis_result["reasoning"]
+            try:
+                print(f"💬 正在處理來自 {message.author.display_name} 的安慰訊息...")
                 
-                # 根據分數調整好感度
-                self.increase_affection(user_id, score)
-                
-                # 生成寵物回應
-                context = f"主人對我說了「{message.content}」，我的心情因此有了轉變。({reasoning})"
-                pet_response = await pet_ai_generator.generate_pet_response(pet_name, pet_description, context)
+                # 顯示 "輸入中..." 提示
+                async with message.channel.typing():
+                    # 1. 分析安慰訊息
+                    analysis_result = await pet_ai_generator.analyze_comfort_message(
+                        pet_name=pet["name"],
+                        pet_description=pet["description"],
+                        user_message=message.content
+                    )
+                    
+                    quality_score = analysis_result.get("quality_score", 0)
+                    pet_response = analysis_result.get("pet_response", "...")
+                    
+                    # 2. 根據品質分數調整好感度
+                    if quality_score >= 8:
+                        affection_change = random.randint(3, 4)
+                        feedback_msg = f"你的話語像暖陽一樣，**{pet['name']}** 感覺好多了！"
+                    elif quality_score >= 5:
+                        affection_change = random.randint(1, 2)
+                        feedback_msg = f"**{pet['name']}** 感受到了你的關心，心情稍微平復了些。"
+                    else:
+                        affection_change = 1
+                        feedback_msg = f"**{pet['name']}** 似乎還有些難過，但謝謝你的陪伴。"
 
-            # 發送結果
-            result_embed = discord.Embed(
-                title="💖 安慰成功",
-                description=f"你溫暖的話語傳達給了 **{pet_name}**！",
-                color=0x90ee90
-            )
-            result_embed.add_field(name="📈 好感度變化", value=f"+{score}", inline=True)
-            result_embed.add_field(name="💭 AI 分析", value=reasoning, inline=True)
-            await message.reply(embed=result_embed, mention_author=False)
+                    self.increase_affection(user_id, affection_change)
+                    
+                    # 3. 清除等待安慰狀態並保存
+                    if "waiting_for_comfort" in self.pets[user_id]:
+                        del self.pets[user_id]["waiting_for_comfort"]
+                    self.save_pets_data()
 
-            # 寵物使用 Webhook 回應
-            webhook = await self.create_pet_webhook(message.channel, pet_name, pet.get("avatar"))
-            if webhook:
-                try:
-                    emoji_prefix = pet.get("avatar_emoji", "🐾")
-                    await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}", thread=message.channel)
-                    await webhook.delete()
-                except Exception as e:
-                    print(f"❌ 安慰回應 Webhook 失敗: {e}")
-                    emoji_prefix = pet.get("avatar_emoji", "🐾")
-                    await message.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
-            else:
-                emoji_prefix = pet.get("avatar_emoji", "🐾")
-                await message.channel.send(f"{emoji_prefix} **{pet_name}**: {pet_response}")
+                    # 4. 發送結果給主人
+                    embed = discord.Embed(
+                        title="💖 安慰成功",
+                        description=feedback_msg,
+                        color=0x90ee90
+                    )
+                    embed.add_field(name="好感度變化", value=f"`+{affection_change}`", inline=True)
+                    embed.add_field(name="目前好感度", value=f"`{self.pets[user_id]['affection']}`", inline=True)
+                    await message.reply(embed=embed, mention_author=False)
 
-            await track_feature_usage(message.author.id, "pet_comfort")
+                    # 5. 讓寵物用 Webhook 回應
+                    webhook = await self.create_pet_webhook(message.channel, pet["name"], pet.get("avatar"))
+                    if webhook:
+                        try:
+                            emoji_prefix = pet.get("avatar_emoji", "🐾")
+                            await webhook.send(pet_response, username=f"{emoji_prefix} {pet['name']}", thread=message.channel)
+                            await webhook.delete()
+                        except Exception as e:
+                            print(f"❌ 安慰回應 Webhook 失敗: {e}")
+                            emoji_prefix = pet.get("avatar_emoji", "🐾")
+                            await message.channel.send(f"{emoji_prefix} **{pet['name']}**: {pet_response}")
+                    else:
+                        emoji_prefix = pet.get("avatar_emoji", "🐾")
+                        await message.channel.send(f"{emoji_prefix} **{pet['name']}**: {pet_response}")
+
+                    # 6. 檢查成就
+                    await self.check_pet_achievements(message.author.id)
+                    await track_feature_usage(message.author.id, "pet_comfort")
+
+            except Exception as e:
+                print(f"❌ 處理安慰訊息時發生錯誤: {e}")
+                # 即使出錯也要解鎖狀態，避免卡死
+                if user_id in self.pets and "waiting_for_comfort" in self.pets[user_id]:
+                    del self.pets[user_id]["waiting_for_comfort"]
+                    self.save_pets_data()
+                await message.channel.send("⚙️ 處理你的安慰時發生了一點小問題，寵物的心情恢復了，但 AI 回應失敗了。")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(PetSystem(bot))

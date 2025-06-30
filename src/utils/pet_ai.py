@@ -190,49 +190,86 @@ class PetAIGenerator:
             print(f"❌ 生成寵物行為描述失敗: {e}")
             return "我正在做一些有趣的事情！"
 
-    async def analyze_comfort_message(self, pet_name: str, personality: str, user_message: str) -> Dict[str, Any]:
-        """分析主人的安慰訊息，並給予評分和理由"""
+    async def analyze_comfort_message(self, pet_name: str, pet_description: str, user_message: str) -> Dict[str, Any]:
+        """
+        分析主人的安慰訊息，評分後生成寵物回應。
+        返回包含品質分數和寵物回應的字典。
+        """
         try:
-            prompt = f"""
-            你是一個寵物心情分析師。一隻名叫「{pet_name}」的虛擬寵物（個性：{personality}）現在心情不好，牠的主人對牠說了以下這句話：
+            # --- 第一步：分析安慰品質 ---
+            analysis_prompt = f"""
+            你是一個寵物心情分析師。一隻名叫「{pet_name}」的虛擬寵物（個性：{pet_description}）現在心情不好，牠的主人對牠說了以下這句話：
             
             主人的話：「{user_message}」
             
-            請根據這句話分析主人安慰的品質，並以 JSON 格式輸出分析結果，包含以下三個欄位：
-            1.  `score` (integer): 安慰品質的分數，範圍從 1 到 5。
-                - 1分：敷衍、無關緊要、甚至有點負面。
-                - 2分：稍微有點關心，但很簡短或通用。
-                - 3分：標準的安慰，有提到寵物的名字或表達關心。
-                - 4分：非常有誠意，能感受到主人的溫暖和理解。
-                - 5分：極度有同理心，充滿愛意，提供了具體的關懷或承諾。
-            2.  `reasoning` (string): 解釋你為什麼給這個分數，用2-3句話簡要說明。
-            3.  `keyword_analysis` (boolean): 這句話是否包含正面關鍵詞，例如「乖」、「秀秀」、「沒事」、「愛你」、「抱抱」等。
+            請根據這句話分析主人安慰的品質，並以 JSON 格式輸出分析結果，包含以下兩個欄位：
+            1.  `quality_score` (integer): 安慰品質的分數，範圍從 1 到 10。
+                - 1-3: 敷衍或無效的安慰。
+                - 4-7: 標準或還不錯的安慰。
+                - 8-10: 非常有同理心、高品質的安慰。
+            2.  `reasoning` (string): 簡要解釋你給這個分數的理由。
 
             JSON 輸出範例：
             {{
-                "score": 4,
-                "reasoning": "主人非常溫柔，給予了寵物滿滿的安全感。",
-                "keyword_analysis": true
+                "quality_score": 8,
+                "reasoning": "主人非常溫柔，給予了寵物滿滿的安全感，並承諾會陪伴牠。"
             }}
             """
             
-            response_text = await generate_text(prompt)
+            analysis_response_text = await generate_text(analysis_prompt)
             
-            # 嘗試解析 JSON
+            analysis_result = {}
             try:
-                # 清理可能的 markdown 格式
-                if response_text.startswith("```json"):
-                    response_text = response_text[7:-3].strip()
-                result = json.loads(response_text)
-                return result
+                if analysis_response_text.startswith("```json"):
+                    analysis_response_text = analysis_response_text[7:-3].strip()
+                analysis_result = json.loads(analysis_response_text)
             except json.JSONDecodeError:
-                print(f"❌ 無法解析安慰分析的 JSON: {response_text}")
-                # 如果解析失敗，提供一個預設的回應
-                return {"score": 2, "reasoning": "主人有關心我，真好。", "keyword_analysis": False}
+                print(f"⚠️ 無法解析安慰分析的 JSON，使用預設值: {analysis_response_text}")
+                analysis_result = {{"quality_score": 5, "reasoning": "主人有關心我。"}}
+
+            quality_score = analysis_result.get("quality_score", 5)
+            reasoning = analysis_result.get("reasoning", "主人有關心我。")
+
+            # --- 第二步：根據分析結果生成寵物回應 ---
+            response_prompt = f"""
+            你是一隻名叫「{pet_name}」的虛擬寵物，你的個性是「{pet_description}」。
+            你剛剛因為心情不好而很難過，你的主人安慰了你。
+
+            對主人安慰的分析如下：
+            - 安慰品質分數: {quality_score}/10
+            - 分析理由: {reasoning}
+
+            現在，請根據這個分析結果，用你的口吻對主人說一句話，表達你現在的心情。
+
+            要求：
+            - 如果分數很高 (8-10)，你的回應應該充滿感激和愛意，感覺完全被治癒了。
+            - 如果分數中等 (4-7)，你的回應應該是感覺好多了，但可能還帶有一點點的委屈或需要更多關愛。
+            - 如果分數很低 (1-3)，你的回應應該是困惑、覺得沒有被理解，或者心情沒有太大變化。
+            - 語氣要完全符合你的寵物個性和當下情境。
+            - 回應要自然、可愛、簡短，不超過50個字。
+            - 直接說話，不要包含任何標籤或前綴，例如「{pet_name}說：」。
+
+            範例 (高分): "嗚...謝謝主人，你的抱抱最溫暖了，我現在感覺好多了！"
+            範例 (中分): "嗯...好吧...謝謝主人的關心..."
+            範例 (低分): "...？"
+            """
+
+            pet_response = await generate_text(response_prompt)
+            
+            if not pet_response:
+                pet_response = "..." if quality_score < 5 else "謝謝主人，我感覺好多了！"
+
+            return {{
+                "quality_score": quality_score,
+                "pet_response": pet_response
+            }}
 
         except Exception as e:
-            print(f"❌ 分析安慰訊息失敗: {e}")
-            return {"score": 1, "reasoning": "好像沒有很懂我的心...", "keyword_analysis": False}
+            print(f"❌ 分析安慰訊息並生成回應時失敗: {e}")
+            return {{
+                "quality_score": 1, 
+                "pet_response": "...(歪著頭看著你，好像不太明白你的意思)"
+            }}
 
 
 # 創建一個全域實例
