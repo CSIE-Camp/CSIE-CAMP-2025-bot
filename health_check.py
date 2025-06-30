@@ -134,7 +134,7 @@ def check_data_directory() -> bool:
         "flags.json",
         "mygo.json",
         "schedule.json",
-        "links.json"
+        "links.json",
     ]
 
     for file_name in data_files:
@@ -251,7 +251,7 @@ def main():
     # 提供建議
     print(f"\n{Colors.BOLD}=== 啟動建議 ==={Colors.ENDC}")
     print("1. 確保所有必要環境變數已設定")
-    print("2. 運行: python -m src.camp_bot")
+    print("2. 運行: python start.py 來啟動機器人")
     print("3. 檢查控制台輸出是否有錯誤")
 
     return passed == total
