@@ -43,14 +43,15 @@ class General(commands.Cog):
             self.link_list = []
 
     @app_commands.command(name="profile", description="查詢你的等級、經驗值和金錢資料")
-    async def profile(self, interaction: discord.Interaction):
+    @app_commands.describe(show="讓所有人都看到你的個人資料")
+    async def profile(self, interaction: discord.Interaction, show: bool = False):
         """查詢用戶的等級、經驗值和金錢資料
         一般使用者只能查自己，管理員可查詢任何人
         """
         # 只能查自己
         target = interaction.user
-
-        await interaction.response.defer(thinking=True, ephemeral=True)
+        ephemeral = not show
+        await interaction.response.defer(thinking=True, ephemeral=ephemeral)
         user_data = await user_data_manager.get_user(target)
 
         # 取得用戶資料
@@ -123,7 +124,8 @@ class General(commands.Cog):
 
         # 追蹤功能使用並檢查成就
         await AchievementManager.track_feature_usage(target.id, "profile", interaction)
-        await AchievementManager.check_money_achievements(target.id, money, interaction)
+        if show:
+            await AchievementManager.check_money_achievements(target.id, money, interaction)
 
     def _calculate_required_exp(self, level: int) -> int:
         """計算升級所需經驗值"""
