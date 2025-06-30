@@ -63,7 +63,7 @@ class MyGo(commands.Cog):
             )
         
         # 追蹤功能使用
-        await AchievementManager.track_feature_usage(interaction.user.id, "mygo", interaction)
+        await AchievementManager.track_feature_usage(interaction.user.id, "mygo", self.bot)
 
 
     @app_commands.command(name="quote", description="隨機取得一句 MyGo 經典台詞")

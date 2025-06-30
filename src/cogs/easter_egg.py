@@ -173,7 +173,7 @@ class EasterEgg(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
         
         # 追蹤功能使用
-        await AchievementManager.track_feature_usage(interaction.user.id, "egg", interaction)
+        await AchievementManager.track_feature_usage(interaction.user.id, "egg", self.bot)
 
 
 async def setup(bot: commands.Bot):

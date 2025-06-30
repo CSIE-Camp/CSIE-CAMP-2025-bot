@@ -147,7 +147,7 @@ class DailyCheckin(commands.Cog):
             await interaction.followup.send(embed=embed)
             
         # 追蹤功能使用
-        await AchievementManager.track_feature_usage(interaction.user.id, "checkin", interaction)
+        await AchievementManager.track_feature_usage(interaction.user.id, "checkin", self.bot)
 
     def _get_random_fortune(self) -> tuple[str, int, str]:
         """隨機取得運勢和名言"""

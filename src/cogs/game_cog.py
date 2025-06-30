@@ -36,7 +36,7 @@ class Games(commands.Cog):
             )
             user["debt"] += 1
             await AchievementManager.check_debt_achievements(
-                interaction.user.id, user["debt"], interaction
+                interaction.user.id, user["debt"], self.bot
             )
             await user_data_manager.update_user_data(interaction.user.id, user)
             return
@@ -65,15 +65,15 @@ class Games(commands.Cog):
             f"# {result_str}\n{user_name} {msg}", ephemeral=True
         )
         await AchievementManager.check_slot_achievements(
-            interaction.user.id, max_count, interaction
+            interaction.user.id, max_count, self.bot
         )
         await AchievementManager.check_money_achievements(
-            interaction.user.id, user["money"], interaction
+            interaction.user.id, user["money"], self.bot
         )
 
         # 追蹤功能使用
         await AchievementManager.track_feature_usage(
-            interaction.user.id, "game_slot", interaction
+            interaction.user.id, "game_slot", self.bot
         )
 
     @game.command(name="dice", description="骰子比大小")
@@ -135,12 +135,12 @@ class Games(commands.Cog):
                 interaction.user.id, user["money"], interaction
             )
             await AchievementManager.check_money_achievements(
-                opponent.id, opponent_data["money"], interaction
+                opponent.id, opponent_data["money"], self.bot
             )
 
             # 追蹤功能使用
             await AchievementManager.track_feature_usage(
-                interaction.user.id, "game_dice", interaction
+                interaction.user.id, "game_dice", self.bot
             )
         else:
             if current_money < amount:
@@ -155,12 +155,12 @@ class Games(commands.Cog):
                 await user_data_manager.update_user_data(interaction.user.id, user)
             await interaction.followup.send(result_text)
             await AchievementManager.check_money_achievements(
-                interaction.user.id, user["money"], interaction
+					interaction.user.id, user["money"], self.bot
             )
 
             # 追蹤功能使用
             await AchievementManager.track_feature_usage(
-                interaction.user.id, "game_dice", interaction
+                interaction.user.id, "game_dice", self.bot
             )
 
     @game.command(name="rps", description="剪刀石頭布")
