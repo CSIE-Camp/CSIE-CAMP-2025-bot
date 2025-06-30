@@ -370,11 +370,20 @@ class General(commands.Cog):
                 inline = False
             )
             await AchievementManager.check_and_award_achievement(interaction.user.id, "boom_light_bad", self.bot)
-        else:
+        elif date < datetime.datetime(2025, 7, 4):
             embed = discord.Embed(title = "遊戲介紹")
             embed.add_field(
                 name = "手冊連結",
                 value = "[【點我！！】](https://drive.google.com/file/d/10gHC5_721gVMX4exWC0NVeLNwWw243TA/view?usp=drivesdk)",
+                inline = False
+            )
+        else:
+            embed = discord.Embed(title = "時候還沒到喔！", color = 0xFF0000)
+            embed.add_field(
+                name = "⁉ 遊戲結束了 ⁉",
+                value = """你也太慢半拍了吧…
+`flag{||4db02ceb09e30901cd50b6e25dbabf||}`
+[不過你真的想要看也是可以啦](https://drive.google.com/file/d/10gHC5_721gVMX4exWC0NVeLNwWw243TA/view?usp=drivesdk)""",
                 inline = False
             )
         await interaction.response.send_message(embed = embed, ephemeral = True)
