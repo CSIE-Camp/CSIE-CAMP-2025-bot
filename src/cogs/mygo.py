@@ -51,15 +51,15 @@ class MyGo(commands.Cog):
             mygo_times = 1
         if mygo_times == 10:
             await AchievementManager.check_and_award_achievement(
-                interaction.user.id, "mygo_good", interaction
+                interaction.user.id, "mygo_good", self.bot
             )
         elif mygo_times == 25:
             await AchievementManager.check_and_award_achievement(
-                interaction.user.id, "mygo_love", interaction
+                interaction.user.id, "mygo_love", self.bot
             )
         elif mygo_times == 50:
             await AchievementManager.check_and_award_achievement(
-                interaction.user.id, "mygo_fan", interaction
+                interaction.user.id, "mygo_fan", self.bot
             )
         
         # 追蹤功能使用

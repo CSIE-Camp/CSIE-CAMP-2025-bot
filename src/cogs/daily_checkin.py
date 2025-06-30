@@ -28,6 +28,7 @@ class DailyCheckin(commands.Cog):
         self.bot = bot
         # 載入 ACG 名言
         self.quotes = self._load_quotes()
+        self.checkin_count: dict[datetime.date, int] = {}
 
     def _load_quotes(self) -> list:
         """載入 ACG 名言"""
@@ -48,10 +49,17 @@ class DailyCheckin(commands.Cog):
         每日簽到抽籤功能。
         用戶簽到後會自動抽取今日運勢，並根據運勢等級獲得不同的金錢獎勵。
         """
-
         user_id = interaction.user.id
         today = datetime.date.today()
         today_str = today.isoformat()
+
+        now = datetime.datetime.now()
+        if now < datetime.datetime(now.year, now.month, now.day, 7, 50):
+            await AchievementManager.check_and_award_achievement(user_id, "early_bird", self.bot)
+            count = self.checkin_count.get(now.date(), 0)
+            if count < 3:
+                await AchievementManager.check_and_award_achievement(user_id, "early_bird_eat_worm", self.bot)
+                self.checkin_count[now.date()] = count + 1
 
         # 獲取用戶資料
         user = await user_data_manager.get_user(user_id, interaction.user)
@@ -78,7 +86,9 @@ class DailyCheckin(commands.Cog):
             new_streak = 1
 
         if new_streak == 4:
-            await AchievementManager.check_and_award_achievement(user_id, "attendance_award", interaction)
+            await AchievementManager.check_and_award_achievement(
+                user_id, "attendance_award", self.bot
+            )
             
         # 抽取今日運勢
         fortune, color, quote = self._get_random_fortune()

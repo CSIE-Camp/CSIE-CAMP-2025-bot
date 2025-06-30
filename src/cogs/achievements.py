@@ -33,7 +33,7 @@ class AchievementCog(commands.Cog):
             # 顯示已獲得的成就
             achieved_text = ""
             for achievement in user_achievements:
-                achieved_text += f"{achievement.icon} **{achievement.name}**\n{achievement.description}\n\n"
+                achieved_text += f"{achievement.icon} **{achievement.name}**\n"
 
             embed.add_field(
                 name=f"已獲得成就 ({len(user_achievements)}/{len(ACHIEVEMENTS)})",
