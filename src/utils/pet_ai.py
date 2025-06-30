@@ -262,13 +262,140 @@ class PetAIGenerator:
         }
         return fallback_behaviors.get(behavior_type, "我是一隻可愛的寵物！(´▽｀)")
 
-    async def analyze_comfort_message(self, pet_name: str, message_content: str) -> Tuple[str, str]:
-        """分析安慰訊息的品質"""
+    async def generate_pet_response(self, pet_name: str, pet_description: str, context: str, mood: str = "normal") -> str:
+        """根據情境和心情生成寵物回應"""
+        try:
+            mood_prompt = ""
+            if mood == "good":
+                mood_prompt = "現在你感到非常開心和被愛。"
+            elif mood == "normal":
+                mood_prompt = "現在你感覺好多了。"
+            elif mood == "bad":
+                mood_prompt = "現在你還是有點難過和困惑。"
+
+            prompt = f"""
+            你是一隻名叫{pet_name}的虛擬寵物，個性：{pet_description}
+            
+            情境：{context}
+            {mood_prompt}
+            
+            請以{pet_name}的身份，用第一人稱回應。
+            要求：
+            1. 符合你的個性特徵
+            2. 語調可愛親切
+            3. 適合寵物的身份
+            4. 一句話內完成，不超過40字
+            5. 可以使用可愛的顏文字
+            """
+            
+            response = await generate_text(prompt)
+            return response if response else f"汪汪！我是{pet_name}~ (´▽｀)"
+            
+        except Exception as e:
+            print(f"❌ 生成寵物回應失敗: {e}")
+            return f"我是{pet_name}，謝謝主人！ (´▽｀)"
+
+    async def generate_comfort_response(self, pet_name: str, personality: str, message_content: str, quality_category: str) -> str:
+        """根據回應品質生成寵物的感謝回應"""
+        try:
+            quality_prompts = {
+                "excellent": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，主人給了你非常溫暖、用心的安慰：「{message_content}」
+                這個安慰讓你感到被深深愛著，心情完全好轉了。
+                請用第一人稱，用一句充滿感動和愛意的話回應主人。
+                要求：表達深深的感動和感謝，溫暖感人，不超過40字
+                """,
+                
+                "good": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，主人很用心地安慰了你：「{message_content}」
+                你感受到了主人的關愛，心情好了很多。
+                請用第一人稱，用一句感謝和開心的話回應主人。
+                要求：表達感謝和溫暖，開心可愛，不超過35字
+                """,
+                
+                "average": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，主人回應了你：「{message_content}」
+                雖然簡單，但你知道主人在關心你，心情好了一些。
+                請用第一人稱，用一句簡單感謝的話回應主人。
+                要求：表達基本的感謝，溫和可愛，不超過30字
+                """,
+                
+                "poor": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，主人回應了你：「{message_content}」
+                雖然感覺主人有點敷衍，但至少知道主人注意到了你。
+                請用第一人稱，用一句略帶委屈但還是感謝的話回應主人。
+                要求：帶一點點委屈但不抱怨，還是感謝，不超過30字
+                """,
+                
+                "terrible": f"""
+                你是一隻名叫{pet_name}的寵物，個性：{personality}
+                你剛才心情不好，但主人的回應讓你更困惑和傷心：「{message_content}」
+                你不明白為什麼主人會這樣說，感到更加難過了。
+                請用第一人稱，用一句傷心困惑的話回應主人。
+                要求：表達困惑和傷心，但不要太過激烈，不超過30字
+                """
+            }
+            
+            prompt = quality_prompts.get(quality_category, quality_prompts["average"])
+            response = await generate_text(prompt)
+            
+            return response if response else self._get_fallback_comfort_response(quality_category)
+            
+        except Exception as e:
+            print(f"❌ 生成安慰回應失敗: {e}")
+            return self._get_fallback_comfort_response(quality_category)
+
+    def _get_fallback_comfort_response(self, quality_category: str) -> str:
+        """獲取備用的安慰回應"""
+        fallback_responses = {
+            "excellent": "主人的話讓我好感動，我真的好愛好愛你！(´▽｀)ﾉ♡",
+            "good": "謝謝主人的安慰，我心情好多了！你真的很溫柔~ (´∀｀)",
+            "average": "謝謝主人關心我，我知道你在乎我的！(´▽｀)",
+            "poor": "主人...雖然你的話有點簡單，但我知道你關心我... (´･ω･`)",
+            "terrible": "主人...我不太明白你的意思，我更困惑了... (´；ω；`)"
+        }
+        return fallback_responses.get(quality_category, "謝謝主人~ (´▽｀)")
+
+    async def generate_chat_response(self, pet_name: str, pet_description: str, user_message: str, affection: int) -> str:
+        """生成寵物對主人聊天的回應"""
+        system_prompt = f"""你是一隻名為 {pet_name} 的虛擬寵物，你的個性是：{pet_description}。
+你正在和你的主人聊天。你的目標是根據你的個性和與主人的好感度（目前為 {affection}），以自然、可愛且符合你個性的方式回應主人的訊息。
+
+- 好感度低時，你的回應可能比較簡短、冷淡或害羞。
+- 好感度高時，你會更熱情、更健談，甚至會主動分享你的小秘密或感受。
+- 回應必須簡短，像寵物說話一樣，最多不超過 50 個字。
+- 不要使用任何 Markdown 格式或表情符號，純文字即可。
+- 你的回應要完全以寵物的口吻和身份進行。
+"""
+    
+        user_prompt = f"主人對你說：「{user_message}」\n你現在會怎麼回應？"
+
+        try:
+            response = await generate_text(system_prompt + user_prompt)
+            return response
+        except Exception as e:
+            print(f"❌ 生成寵物聊天回應失敗: {e}")
+            # 提供一個備用回應
+            fallback_responses = [
+                f"{pet_name} 歪著頭看著你。",
+                f"{pet_name} 發出咕嚕咕嚕的聲音。",
+                f"{pet_name} 輕輕蹭了蹭你。",
+                "...",
+            ]
+            return random.choice(fallback_responses)
+
+
+    async def analyze_comfort_message(pet_name: str, pet_description: str, user_message: str) -> Dict[str, Any]:
+        """分析主人的安慰訊息，並返回分析結果和分數"""
         try:
             prompt = f"""
             你是一個寵物心理分析師。請分析以下主人對寵物 {pet_name} 的安慰訊息。
 
-            主人的訊息：「{message_content}」
+            主人的訊息：「{user_message}」
 
             請根據以下標準，將訊息分類為「good」、「normal」或「bad」，並提供一句話的簡短分析。
             - good: 訊息充滿愛心、耐心，能有效安撫寵物的情緒。
@@ -289,7 +416,7 @@ class PetAIGenerator:
             if response_text.strip().startswith("```json"):
                 response_text = response_text.strip()[7:-3].strip()
             elif response_text.strip().startswith("```"):
-                 response_text = response_text.strip()[3:-3].strip()
+                response_text = response_text.strip()[3:-3].strip()
 
             response_json = json.loads(response_text)
             
@@ -399,6 +526,34 @@ class PetAIGenerator:
             "terrible": "主人...我不太明白你的意思，我更困惑了... (´；ω；`)"
         }
         return fallback_responses.get(quality_category, "謝謝主人~ (´▽｀)")
+
+    async def generate_chat_response(self, pet_name: str, pet_description: str, user_message: str, affection: int) -> str:
+        """生成寵物對主人聊天的回應"""
+        system_prompt = f"""你是一隻名為 {pet_name} 的虛擬寵物，你的個性是：{pet_description}。
+    你正在和你的主人聊天。你的目標是根據你的個性和與主人的好感度（目前為 {affection}），以自然、可愛且符合你個性的方式回應主人的訊息。
+
+    - 好感度低時，你的回應可能比較簡短、冷淡或害羞。
+    - 好感度高時，你會更熱情、更健談，甚至會主動分享你的小秘密或感受。
+    - 回應必須簡短，像寵物說話一樣，最多不超過 50 個字。
+    - 不要使用任何 Markdown 格式或表情符號，純文字即可。
+    - 你的回應要完全以寵物的口吻和身份進行。
+    """
+
+        user_prompt = f"主人對你說：「{user_message}」\n你現在會怎麼回應？"
+
+        try:
+            response = await generate_text(system_prompt + user_prompt)
+            return response
+        except Exception as e:
+            print(f"❌ 生成寵物聊天回應失敗: {e}")
+            # 提供一個備用回應
+            fallback_responses = [
+                f"{pet_name} 歪著頭看著你。",
+                f"{pet_name} 發出咕嚕咕嚕的聲音。",
+                f"{pet_name} 輕輕蹭了蹭你。",
+                "...",
+            ]
+            return random.choice(fallback_responses)
 
 
 # 創建全局實例
