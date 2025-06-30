@@ -148,7 +148,7 @@ class AchievementManager:
     @staticmethod
     async def check_debt_achievements(user_id: int, debt_count: int, ctx=None):
         """檢查欠債相關成就"""
-        if debt_count >= 20:
+        if debt_count >= 10:
             await AchievementManager.check_and_award_achievement(
                 user_id, "kong_yiji", ctx
             )

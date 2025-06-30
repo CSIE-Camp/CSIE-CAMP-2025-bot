@@ -123,9 +123,9 @@ class General(commands.Cog):
         await interaction.followup.send(embed=embed)
 
         # 追蹤功能使用並檢查成就
-        await AchievementManager.track_feature_usage(target.id, "profile", interaction)
+        await AchievementManager.track_feature_usage(target.id, "profile", self.bot)
         if show:
-            await AchievementManager.check_money_achievements(target.id, money, interaction)
+            await AchievementManager.check_money_achievements(target.id, money, self.bot)
 
     def _calculate_required_exp(self, level: int) -> int:
         """計算升級所需經驗值"""
@@ -233,7 +233,7 @@ class General(commands.Cog):
         await interaction.response.send_message(embed=embed)
         
         # 追蹤功能使用
-        await AchievementManager.track_feature_usage(interaction.user.id, "links", interaction)
+        await AchievementManager.track_feature_usage(interaction.user.id, "links", self.bot)
 
     def _get_game_channel_mention(self):
         # 只取第一個允許遊戲的頻道

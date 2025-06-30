@@ -58,7 +58,7 @@ class Notes(commands.Cog):
         if self.notes_json.get(keyword):
             await interaction.followup.send(self.notes_json[keyword]["content"], ephemeral=not show_publicly)
             # 追蹤功能使用
-            await AchievementManager.track_feature_usage(interaction.user.id, "note_search", interaction)
+            await AchievementManager.track_feature_usage(interaction.user.id, "note_search", self.bot)
             return
 
         status_message = await interaction.followup.send(
@@ -110,7 +110,7 @@ class Notes(commands.Cog):
             )
             
             # 追蹤功能使用
-            await AchievementManager.track_feature_usage(interaction.user.id, "note_search", interaction)
+            await AchievementManager.track_feature_usage(interaction.user.id, "note_search", self.bot)
             # await interaction.followup.send(self.notes_json[closest_name]["content"], ephemeral=not show_publicly)
             return
 
