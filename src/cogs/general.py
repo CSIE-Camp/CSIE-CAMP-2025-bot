@@ -369,7 +369,7 @@ class General(commands.Cog):
                 value = "還想要偷看呀！",
                 inline = False
             )
-            await AchievementManager.check_and_award_achievement(interaction.user.id, "boom_light_bad")
+            await AchievementManager.check_and_award_achievement(interaction.user.id, "boom_light_bad", self.bot)
         else:
             embed = discord.Embed(title = "遊戲介紹")
             embed.add_field(

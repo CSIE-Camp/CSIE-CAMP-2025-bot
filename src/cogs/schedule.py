@@ -4,7 +4,7 @@ from discord.ext import commands
 import json
 import datetime
 import random
-from src.utils.achievements import achievement_manager
+from src.utils.achievements import AchievementManager
 from src.utils.user_data import user_data_manager
 
 from src.constants import SCHEDULE_FILE
@@ -238,7 +238,7 @@ class Schedule(commands.Cog):
             new_streak = 1
 
         if new_streak == 4:
-            achievement_manager.unlock_achievement(user_id, "miss_you")
+            AchievementManager.check_and_award_achievement(user_id, "miss_you", self.bot)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Schedule(bot))

@@ -7,10 +7,10 @@
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import discord
+from discord.ext import commands
 import json
 import os
 from src.utils.user_data import user_data_manager
-
 
 class Achievement:
     """成就類別"""
@@ -61,7 +61,7 @@ class AchievementManager:
 
     @staticmethod
     async def check_and_award_achievement(
-        user_id: int, achievement_id: str, ctx=None
+        user_id: int, achievement_id: str, ctx: commands.Bot|commands.Context = None
     ) -> bool:
         """
         檢查並授予成就
@@ -93,15 +93,21 @@ class AchievementManager:
 
         await user_data_manager.update_user_data(user_id, user)
 
+        bot: commands.Bot = None
         # 如果有context，發送成就獲得訊息
-        if ctx:
-            user_obj = await ctx.bot.fetch_user(user_id)
+        if isinstance(ctx, commands.Context):
+            bot = ctx.bot
+        else:
+            bot = ctx
+        if bot:
+            user_obj = await bot.fetch_user(user_id)
             embed = discord.Embed(
                 title="🎉 恭喜獲得成就！",
-                description=f"{user_obj.mention} 達成了 **{achievement.icon} {achievement.name}**\n{achievement.description}",
+                description=f"{user_obj.mention} 達成了成就 **{achievement.icon} {achievement.name}**",
                 color=discord.Color.gold(),
             )
-            await ctx.send(embed=embed)
+            channel = await bot.fetch_channel(os.getenv('ANNOUNCEMENT_CHANNEL_ID'))
+            await channel.send(embed=embed)
 
         return True
 
