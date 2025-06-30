@@ -138,7 +138,7 @@ class AchievementManager:
         """檢查拉霸相關成就"""
         if max_count == 5:
             await AchievementManager.check_and_award_achievement(
-                user_id, "slot_jackpot", ctx
+                user_id, "slot_god", ctx
             )
         elif max_count == 4:
             await AchievementManager.check_and_award_achievement(

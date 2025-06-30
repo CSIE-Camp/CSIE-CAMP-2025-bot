@@ -78,7 +78,9 @@ class DailyCheckin(commands.Cog):
             new_streak = 1
 
         if new_streak == 4:
-            await AchievementManager.check_and_award_achievement(user_id, "attendance_award", interaction)
+            await AchievementManager.check_and_award_achievement(
+                user_id, "attendance_award", self.bot
+            )
             
         # 抽取今日運勢
         fortune, color, quote = self._get_random_fortune()
