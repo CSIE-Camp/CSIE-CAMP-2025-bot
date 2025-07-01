@@ -54,7 +54,7 @@ class DailyCheckin(commands.Cog):
         today_str = today.isoformat()
 
         now = datetime.datetime.now()
-        if now < datetime.datetime(now.year, now.month, now.day, 7, 50):
+        if datetime.datetime(now.year, now.month, now.day, 4, 30) < now < datetime.datetime(now.year, now.month, now.day, 7, 50):
             await AchievementManager.check_and_award_achievement(user_id, "early_bird", self.bot)
             count = self.checkin_count.get(now.date(), 0)
             if count < 3:
