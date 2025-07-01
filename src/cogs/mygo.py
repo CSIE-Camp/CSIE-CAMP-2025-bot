@@ -68,9 +68,7 @@ class MyGo(commands.Cog):
                 interaction.user.id, "mygo_fan", self.bot
             )
         user["today_mygo_search_times"] = mygo_times
-        await user_data_manager.update_user_data(
-            user_id=interaction.user.id, user_data=user
-        )
+        await user_data_manager.update_user_data(user_id=interaction.user.id, data=user)
         # 追蹤功能使用
         await AchievementManager.track_feature_usage(
             interaction.user.id, "mygo", self.bot
