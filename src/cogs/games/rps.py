@@ -83,11 +83,11 @@ class RPSView(discord.ui.View):
             full_result += f"\n{winner.mention} 贏得了 {self.amount} 元！"
             
             # 檢查金錢成就
-            await AchievementManager.check_money_achievements(winner.id, winner_data["money"], self.bot)
+            # await AchievementManager.check_money_achievements(winner.id, winner_data["money"], self.bot)
         
         # 追蹤功能使用（為兩個參與者都追蹤）
-        await AchievementManager.track_feature_usage(self.challenger.id, "game_rps", self.bot)
-        if not self.opponent.bot:
-            await AchievementManager.track_feature_usage(self.opponent.id, "game_rps", self.bot)
+        # await AchievementManager.track_feature_usage(self.challenger.id, "game_rps", self.bot)
+        # if not self.opponent.bot:
+        #     await AchievementManager.track_feature_usage(self.opponent.id, "game_rps", self.bot)
 
         await channel.send(full_result)
