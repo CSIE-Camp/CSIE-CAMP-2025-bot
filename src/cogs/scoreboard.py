@@ -85,9 +85,30 @@ class Scoreboard(commands.Cog):
     async def _generate_leaderboard_embed(
         self, category: str, top_n: int, color: discord.Color, formatter
     ):
-        """Helper to generate a single leaderboard embed."""
-        top_users = self.user_data.get_top_users(category, top_n)
-        description = await self._create_leaderboard_text(top_users, formatter)
+        """Helper to generate a single leaderboard embed, only for ADMIN_ROLE_ID users."""
+        # 取得 scoreboard 頻道所屬 guild
+        channel = self.bot.get_channel(config.SCOREBOARD_CHANNEL_ID)
+        guild = channel.guild if channel else None
+        if not guild:
+            # fallback: 不過濾
+            top_users = self.user_data.get_top_users(category, top_n)
+            description = await self._create_leaderboard_text(top_users, formatter)
+            return discord.Embed(
+                title=self.titles[category], description=description, color=color
+            )
+
+        # 只保留有 PLAYER_ROLE_IDS 的用戶
+        player_role_ids = set(config.PLAYER_ROLE_IDS)
+        filtered = []
+        for user_id, data in self.user_data.get_top_users(
+            category, 100
+        ):  # 取前100名再過濾
+            member = guild.get_member(int(user_id))
+            if member and any(role.id in player_role_ids for role in member.roles):
+                filtered.append((user_id, data))
+            if len(filtered) >= top_n:
+                break
+        description = await self._create_leaderboard_text(filtered, formatter)
         return discord.Embed(
             title=self.titles[category], description=description, color=color
         )
@@ -120,57 +141,55 @@ class Scoreboard(commands.Cog):
                 formatter=lambda d: f"**{len(d.get('found_flags', []))}** 個彩蛋",
             ),
         }
-        
+
         # 添加寵物好感度排行榜
         pet_affection_embed = await self._generate_pet_affection_leaderboard()
         if pet_affection_embed:
             embeds["pet_affection"] = pet_affection_embed
-            
+
         return embeds
 
     async def _generate_pet_affection_leaderboard(self):
         """生成寵物好感度排行榜"""
         try:
             # 嘗試獲取寵物系統的 cog
-            pet_cog = self.bot.get_cog('PetSystem')
-            if not pet_cog or not hasattr(pet_cog, 'pets'):
+            pet_cog = self.bot.get_cog("PetSystem")
+            if not pet_cog or not hasattr(pet_cog, "pets"):
                 return None
-            
+
             pets_data = pet_cog.pets
             if not pets_data:
                 return discord.Embed(
                     title=self.titles["pet_affection"],
                     description="目前還沒有人認養寵物呢！",
-                    color=discord.Color.pink()
+                    color=discord.Color.pink(),
                 )
-            
+
             # 按好感度排序，取前3名
             sorted_pets = sorted(
-                pets_data.items(),
-                key=lambda x: x[1].get("affection", 0),
-                reverse=True
+                pets_data.items(), key=lambda x: x[1].get("affection", 0), reverse=True
             )[:3]
-            
+
             if not sorted_pets:
                 return discord.Embed(
                     title=self.titles["pet_affection"],
                     description="尚無資料",
-                    color=discord.Color.pink()
+                    color=discord.Color.pink(),
                 )
-            
+
             medals = {1: "🥇", 2: "🥈", 3: "🥉"}
             lines = []
-            
+
             for i, (user_id, pet_data) in enumerate(sorted_pets, 1):
                 try:
                     user = await self.bot.fetch_user(int(user_id))
                     user_mention = user.mention
                 except discord.NotFound:
                     user_mention = f"`ID:{user_id}`"
-                
+
                 pet_name = pet_data.get("name", "未知寵物")
                 affection = pet_data.get("affection", 0)
-                
+
                 # 根據好感度顯示愛心等級
                 if affection >= 50:
                     love_level = "💕💕💕"
@@ -180,18 +199,20 @@ class Scoreboard(commands.Cog):
                     love_level = "💕"
                 else:
                     love_level = "💖"
-                
+
                 medal = medals.get(i, f"**{i}.**")
-                lines.append(f"{medal} {user_mention} 的 **{pet_name}** {love_level}\n好感度：**{affection}**")
-            
+                lines.append(
+                    f"{medal} {user_mention} 的 **{pet_name}** {love_level}\n好感度：**{affection}**"
+                )
+
             description = "\n\n".join(lines) if lines else "尚無資料"
-            
+
             return discord.Embed(
                 title=self.titles["pet_affection"],
                 description=description,
-                color=discord.Color.pink()
+                color=discord.Color.pink(),
             )
-            
+
         except Exception as e:
             print(f"❌ 生成寵物好感度排行榜時發生錯誤: {e}")
             return None

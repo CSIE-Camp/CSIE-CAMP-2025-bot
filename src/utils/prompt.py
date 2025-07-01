@@ -81,11 +81,11 @@ LLM_GEN_IMAGE_PROMPT = (
 
 # === MyGo prompts ===
 MYGO_QUOTE_SIMILAR_PROMPT = (
-    "從以下《MyGO!!!!!》的台詞列表中，選出與使用者輸入的「{keyword}」語意最接近或最相關的一句台詞。"
+    "從以下《MyGO!!!!!》以及《ave-mujica》的台詞列表中，選出與使用者輸入的「{keyword}」語意最接近或最相關的一句台詞。"
     "請「只」回傳那句台詞，不要包含任何其他文字或引號。\n\n台詞列表：\n{quotes_str}"
 )
 
 MYGO_CHARACTER_GEN_PROMPT = (
-    "「{keyword}」這句話聽起來像是 MyGO!!!!! 裡的哪個角色會說的台詞？"
+    "「{keyword}」這句話聽起來像是 MyGO!!!!!/ave-mujica 裡的哪個角色會說的台詞？"
     "請你扮演那個角色，並用該角色的口吻，生成一句全新的、風格相似的台詞。"
 )

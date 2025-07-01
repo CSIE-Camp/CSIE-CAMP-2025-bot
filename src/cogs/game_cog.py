@@ -217,6 +217,7 @@ class Games(commands.Cog):
             )
             return
         
+        user = await user_data_manager.get_user(interaction.user.id, interaction.user)
         if await self.in_class_game_check(interaction, amount, user):
             return
         
