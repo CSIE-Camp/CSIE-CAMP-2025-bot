@@ -38,12 +38,14 @@ class MyGo(commands.Cog):
         except (FileNotFoundError, json.JSONDecodeError):
             self.mygo_quotes = []
 
-    @app_commands.command(name="mygo", description="從 MyGO!!!!! 和 ave-mujica 圖庫中搜尋一張圖片。")
+    @app_commands.command(
+        name="mygo", description="從 MyGO!!!!! 和 ave-mujica 圖庫中搜尋一張圖片。"
+    )
     @app_commands.describe(keyword="要搜尋的台詞或關鍵字")
     async def mygo_slash(self, interaction: discord.Interaction, keyword: str):
         """Searches for a MyGo image."""
         await self.handle_mygo_search(interaction, keyword)
-        
+
         user = await user_data_manager.get_user(interaction.user.id)
         mygo_date = user.get("mygo_search_date", datetime.now().date())
         mygo_times = user.get("today_mygo_search_times", 0)
@@ -66,15 +68,27 @@ class MyGo(commands.Cog):
                 interaction.user.id, "mygo_fan", self.bot
             )
         user["today_mygo_search_times"] = mygo_times
-        await user_data_manager.update_user_data(user_id=interaction.user.id, user_data=user)
+        await user_data_manager.update_user_data(
+            user_id=interaction.user.id, user_data=user
+        )
         # 追蹤功能使用
-        await AchievementManager.track_feature_usage(interaction.user.id, "mygo", self.bot)
+        await AchievementManager.track_feature_usage(
+            interaction.user.id, "mygo", self.bot
+        )
 
-
-    @app_commands.command(name="quote", description=f"隨機取得一句和 MyGo/ave-mujica 經典台詞")
+    @app_commands.command(
+        name="quote", description=f"隨機取得一句和 MyGo/ave-mujica 經典台詞"
+    )
     async def quote(self, interaction: discord.Interaction):
         """隨機回傳一個 MyGo 的名言"""
         try:
+            # Helper to send messages and return the message object
+            async def send(content, **kwargs):
+                if interaction.response.is_done():
+                    return await interaction.followup.send(content, **kwargs)
+                else:
+                    return await interaction.response.send_message(content, **kwargs)
+
             if not self.mygo_quotes:
                 await interaction.response.send_message(
                     "抱歉，我找不到任何 MyGo/ave-mujica 的名言。", ephemeral=True
@@ -82,29 +96,33 @@ class MyGo(commands.Cog):
                 return
 
             quote = random.choice(self.mygo_quotes)
-            image_url = quote['url']
-            image_alt = quote['alt']
-            if 'ave-mujica' in image_url:
+            image_url = quote["url"]
+            image_alt = quote["alt"]
+            if "ave-mujica" in image_url:
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(image_url) as resp:
                         if resp.status != 200:
-                            return await send('讀取失敗')
+                            return await send("讀取失敗")
                         data = await resp.read()
                 random_color = random.randint(0, 0xFFFFFF)
                 file = discord.File(fp=io.BytesIO(data), filename="image.webp")
-                embed = discord.Embed(description=image_alt, color=random_color, timestamp=datetime.now())
+                embed = discord.Embed(
+                    description=image_alt, color=random_color, timestamp=datetime.now()
+                )
                 embed.set_image(url="attachment://image.webp")
                 embed.set_footer(text="ave-mujica 廚 in.")
-                await interaction.response.send_message('你覺得這張如何💭',embed=embed, file=file)
+                await send("你覺得這張如何💭", embed=embed, file=file)
                 return
             else:
                 random_color = random.randint(0, 0xFFFFFF)
-                embed = discord.Embed(description=image_alt, color=random_color, timestamp=datetime.now())
+                embed = discord.Embed(
+                    description=image_alt, color=random_color, timestamp=datetime.now()
+                )
                 embed.set_image(url=image_url)
                 embed.set_footer(text="mygo 廚 in.")
-                await interaction.response.send_message('你覺得這張如何💭',embed=embed)
+                await send("你覺得這張如何💭", embed=embed)
                 return
-            await interaction.response.send_message(f" {quote}")
+            await send(f" {quote}")
         except Exception as e:
             print(f"Quote 命令錯誤: {e}")
             await interaction.response.send_message(
@@ -161,32 +179,43 @@ class MyGo(commands.Cog):
         try:
             # --- 1. First attempt: Direct search in local JSON ---
             matches = [
-                item for item in self.mygo_quotes
+                item
+                for item in self.mygo_quotes
                 if isinstance(item, dict) and keyword in item.get("alt", "")
             ]
             if matches:
-                index = random.randint(0,len(matches))
-                image_url = matches[index]['url']
-                image_alt = matches[index]['alt']
-                if 'ave-mujica' in image_url:
+                index = random.randint(0, len(matches))
+                image_url = matches[index]["url"]
+                image_alt = matches[index]["alt"]
+                if "ave-mujica" in image_url:
                     async with aiohttp.ClientSession() as sess:
                         async with sess.get(image_url) as resp:
                             if resp.status != 200:
-                                return await send('讀取失敗')
+                                return await send("讀取失敗")
                             data = await resp.read()
                     random_color = random.randint(0, 0xFFFFFF)
                     file = discord.File(fp=io.BytesIO(data), filename="image.webp")
-                    embed = discord.Embed(description=image_alt, color=random_color, timestamp=datetime.now())
+                    embed = discord.Embed(
+                        description=image_alt,
+                        color=random_color,
+                        timestamp=datetime.now(),
+                    )
                     embed.set_image(url="attachment://image.webp")
                     embed.set_footer(text="ave-mujica 廚 in.")
-                    await send('從最相關的多張圖片中隨機選擇一張',embed=embed, file=file)
+                    await send(
+                        "從最相關的多張圖片中隨機選擇一張", embed=embed, file=file
+                    )
                     return
                 else:
                     random_color = random.randint(0, 0xFFFFFF)
-                    embed = discord.Embed(description=image_alt, color=random_color, timestamp=datetime.now())
+                    embed = discord.Embed(
+                        description=image_alt,
+                        color=random_color,
+                        timestamp=datetime.now(),
+                    )
                     embed.set_image(url=image_url)
                     embed.set_footer(text="mygo 廚 in.")
-                    await send('我找找喔，你是說這張對吧',embed=embed)
+                    await send("我找找喔，你是說這張對吧", embed=embed)
                     return
 
             # --- If no direct match, show searching message and proceed to LLM fallbacks ---
@@ -200,8 +229,8 @@ class MyGo(commands.Cog):
                         status_message, f"找不到「{keyword}」的相關圖片... 😵"
                     )
                 return  # Can't do anything else
-            
-             # --- 2. Second attempt: Find similar quote using LLM ---
+
+            # --- 2. Second attempt: Find similar quote using LLM ---
             typing_context = context.channel
             async with typing_context.typing():
                 if status_message:
@@ -211,9 +240,13 @@ class MyGo(commands.Cog):
                     )
 
                 quotes_str = "\n".join(
-                    item["alt"] for item in self.mygo_quotes if isinstance(item, dict) and "alt" in item
+                    item["alt"]
+                    for item in self.mygo_quotes
+                    if isinstance(item, dict) and "alt" in item
                 )
-                prompt1 = f"從以下《MyGO!!!!!》以及《ave-mujica》的台詞列表中，選出與使用者輸入的「{keyword}」語意最接近或最相關的一句台詞。請「只」回傳那句台詞，不要包含任何其他文字或引號。\n\n台詞列表：\n{quotes_str}"
+                prompt1 = MYGO_QUOTE_SIMILAR_PROMPT.format(
+                    keyword=keyword, quotes_str=quotes_str
+                )
 
                 closest_quote_response = await self.model.generate_content_async(
                     prompt1
@@ -222,8 +255,10 @@ class MyGo(commands.Cog):
 
                 if closest_quote:
                     matches2 = [
-                        item for item in self.mygo_quotes
-                        if isinstance(item, dict) and closest_quote in item.get("alt", "")
+                        item
+                        for item in self.mygo_quotes
+                        if isinstance(item, dict)
+                        and closest_quote in item.get("alt", "")
                     ]
                     if matches2:
                         if status_message:
@@ -231,8 +266,43 @@ class MyGo(commands.Cog):
                                 status_message,
                                 f"沒有找到「{keyword}」，但我找到了這個，應該差不多吧？\n> {closest_quote}",
                             )
-                        image_url_2 = random.choice(matches2)["url"]
-                        await send(image_url_2)
+                        match2 = random.choice(matches2)
+                        image_url_2 = match2["url"]
+                        image_alt_2 = match2["alt"]
+                        random_color = random.randint(0, 0xFFFFFF)
+                        if "ave-mujica" in image_url_2:
+                            async with aiohttp.ClientSession() as sess:
+                                async with sess.get(image_url_2) as resp:
+                                    if resp.status != 200:
+                                        return await send("讀取失敗")
+                                    data = await resp.read()
+                            file = discord.File(
+                                fp=io.BytesIO(data), filename="image.webp"
+                            )
+                            embed = discord.Embed(
+                                description=image_alt_2,
+                                color=random_color,
+                                timestamp=datetime.now(),
+                            )
+                            embed.set_image(url="attachment://image.webp")
+                            embed.set_footer(text="ave-mujica 廚 in.")
+                            await send(
+                                f"沒有找到「{keyword}」，但我找到了這個，應該差不多吧？\n> {closest_quote}",
+                                embed=embed,
+                                file=file,
+                            )
+                        else:
+                            embed = discord.Embed(
+                                description=image_alt_2,
+                                color=random_color,
+                                timestamp=datetime.now(),
+                            )
+                            embed.set_image(url=image_url_2)
+                            embed.set_footer(text="mygo 廚 in.")
+                            await send(
+                                f"沒有找到「{keyword}」，但我找到了這個，應該差不多吧？\n",
+                                embed=embed,
+                            )
                         return
 
                     # --- 3. Third attempt: Generate new sentence ---
@@ -241,7 +311,9 @@ class MyGo(commands.Cog):
                         status_message,
                         f"還是找不到「{keyword}」的相關圖片，讓我想想... 🤔",
                     )
-                prompt2 = f"「{keyword}」這句話聽起來像是 MyGO!!!!!/ave-mujica 裡的哪個角色會說的台詞？請你扮演那個角色，並用該角色的口吻，生成一句全新的、風格相似的台詞。"
+
+                prompt2 = MYGO_CHARACTER_GEN_PROMPT.format(keyword=keyword)
+
                 llm_response = await self.model.generate_content_async(prompt2)
                 if status_message:
                     await edit_message(
