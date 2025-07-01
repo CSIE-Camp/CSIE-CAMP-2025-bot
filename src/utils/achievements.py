@@ -101,14 +101,21 @@ class AchievementManager:
         else:
             bot = ctx
         if bot:
-            user_obj = await bot.fetch_user(user_id)
-            embed = discord.Embed(
-                title="🎉 恭喜獲得成就！",
-                description=f"{user_obj.mention} 達成了成就 **{achievement.icon} {achievement.name}**",
-                color=discord.Color.gold(),
-            )
-            channel = await bot.fetch_channel(os.getenv("ANNOUNCEMENT_CHANNEL_ID"))
-            await channel.send(embed=embed)
+            try:
+                announcement_channel_id = os.getenv("ANNOUNCEMENT_CHANNEL_ID")
+                if announcement_channel_id:
+                    user_obj = await bot.fetch_user(user_id)
+                    embed = discord.Embed(
+                        title="🎉 恭喜獲得成就！",
+                        description=f"{user_obj.mention} 達成了成就 **{achievement.icon} {achievement.name}**",
+                        color=discord.Color.gold(),
+                    )
+                    channel = await bot.fetch_channel(int(announcement_channel_id))
+                    await channel.send(embed=embed)
+                else:
+                    print(f"⚠️ 未設定 ANNOUNCEMENT_CHANNEL_ID，無法發送成就通知")
+            except Exception as e:
+                print(f"❌ 發送成就通知失敗: {e}")
 
         return True
 

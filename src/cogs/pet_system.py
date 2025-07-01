@@ -259,8 +259,8 @@ class PetSystem(commands.Cog):
         """生成所有寵物行為的定時器"""
         now = datetime.datetime.now()
         return {
-            "bad_mood": now + datetime.timedelta(seconds=random.randint(60, 90)),
-            "treasure_hunt": now + datetime.timedelta(minutes=random.randint(1400, 1500)),
+            "bad_mood": now + datetime.timedelta(seconds=random.randint(6, 9)),
+            "treasure_hunt": now + datetime.timedelta(seconds=random.randint(1,2)),
         }
 
     def reset_timer(self, user_id: str, timer_type: str):
@@ -269,8 +269,8 @@ class PetSystem(commands.Cog):
             self.pet_timers[user_id] = {}
         
         timer_ranges = {
-            "bad_mood": (220, 260),
-            "treasure_hunt": (1400, 1500),
+            "bad_mood": (1, 2),
+            "treasure_hunt": (1, 2),
         }
         
         min_time, max_time = timer_ranges.get(timer_type, (5, 10))
@@ -585,9 +585,17 @@ class PetSystem(commands.Cog):
             print(f"🎨 開始為 {pet_name} 生成專屬頭像...")
             
             # 使用新的 AI 生成器
-            avatar_bytes, avatar_emoji = await pet_ai_generator.generate_pet_avatar(pet_name, pet_description)
+            avatar_bytesio, avatar_emoji = await pet_ai_generator.generate_pet_avatar(pet_name, pet_description)
             
-            if avatar_bytes:
+            if avatar_bytesio:
+                # 如果返回的是 BytesIO 對象，提取其中的 bytes 資料
+                if hasattr(avatar_bytesio, 'getvalue'):
+                    avatar_bytes = avatar_bytesio.getvalue()
+                elif hasattr(avatar_bytesio, 'read'):
+                    avatar_bytes = avatar_bytesio.read()
+                else:
+                    avatar_bytes = avatar_bytesio
+                
                 print(f"✅ {pet_name} 的 AI 頭像生成成功！")
                 return avatar_bytes, avatar_emoji
             else:
@@ -622,10 +630,13 @@ class PetSystem(commands.Cog):
             
             # 資深飼主成就 - 相處超過7天
             if user_str in self.pets:
-                adopted_date = datetime.datetime.fromisoformat(self.pets[user_str]["adopted_date"])
-                days_together = (datetime.datetime.now() - adopted_date).days
-                if days_together >= 4:
-                    await AchievementManager.check_and_award_achievement(user_id, "long_term_owner", self.bot)
+                try:
+                    adopted_date = datetime.datetime.fromisoformat(self.pets[user_str]["adopted_date"])
+                    days_together = (datetime.datetime.now() - adopted_date).days
+                    if days_together >= 4:
+                        await AchievementManager.check_and_award_achievement(user_id, "long_term_owner", self.bot)
+                except (ValueError, KeyError) as e:
+                    print(f"⚠️ 解析認養日期失敗: {e}")
 
         except Exception as e:
             print(f"❌ 檢查寵物成就失敗: {e}")

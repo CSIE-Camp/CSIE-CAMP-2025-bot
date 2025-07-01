@@ -225,7 +225,7 @@ class PetAIGenerator:
                 analysis_result = json.loads(analysis_response_text)
             except json.JSONDecodeError:
                 print(f"⚠️ 無法解析安慰分析的 JSON，使用預設值: {analysis_response_text}")
-                analysis_result = {{"quality_score": 5, "reasoning": "主人有關心我。"}}
+                analysis_result = {"quality_score": 5, "reasoning": "主人有關心我。"}
 
             quality_score = analysis_result.get("quality_score", 5)
             reasoning = analysis_result.get("reasoning", "主人有關心我。")
@@ -259,17 +259,17 @@ class PetAIGenerator:
             if not pet_response:
                 pet_response = "..." if quality_score < 5 else "謝謝主人，我感覺好多了！"
 
-            return {{
+            return {
                 "quality_score": quality_score,
                 "pet_response": pet_response
-            }}
+            }
 
         except Exception as e:
             print(f"❌ 分析安慰訊息並生成回應時失敗: {e}")
-            return {{
+            return {
                 "quality_score": 1, 
                 "pet_response": "...(歪著頭看著你，好像不太明白你的意思)"
-            }}
+            }
 
 
 # 創建一個全域實例
