@@ -938,50 +938,50 @@ class PetSystem(commands.Cog):
         await interaction.response.send_message(embed=embed)
         await track_feature_usage(interaction.user.id, "pet_ranking")
 
-    @app_commands.command(name="show_off_pet", description="在公共頻道炫耀你的寵物")
-    async def show_off_pet(self, interaction: discord.Interaction):
-        """炫耀寵物：/show_off_pet"""
-        user_id = str(interaction.user.id)
-        if user_id not in self.pets:
-            await interaction.response.send_message("❌ 你還沒有認養寵物！", ephemeral=True)
-            return
+    # @app_commands.command(name="show_off_pet", description="在公共頻道炫耀你的寵物")
+    # async def show_off_pet(self, interaction: discord.Interaction):
+    #     """炫耀寵物：/show_off_pet"""
+    #     user_id = str(interaction.user.id)
+    #     if user_id not in self.pets:
+    #         await interaction.response.send_message("❌ 你還沒有認養寵物！", ephemeral=True)
+    #         return
 
-        pet = self.pets[user_id]
-        pet_name = pet["name"]
+    #     pet = self.pets[user_id]
+    #     pet_name = pet["name"]
         
-        await interaction.response.defer()
+    #     await interaction.response.defer()
 
-        async with interaction.channel.typing():
-            context = "主人正在向大家炫耀我，我該說些什麼好呢？"
-            pet_response = await pet_ai_generator.generate_pet_response(pet_name, pet["description"], context)
+    #     async with interaction.channel.typing():
+    #         context = "主人正在向大家炫耀我，我該說些什麼好呢？"
+    #         pet_response = await pet_ai_generator.generate_pet_response(pet_name, pet["description"], context)
 
-            embed = discord.Embed(
-                title=f"🌟 {interaction.user.display_name} 的愛寵登場！",
-                description=f"來看看可愛的 **{pet_name}**！",
-                color=discord.Color.gold()
-            )
+    #         embed = discord.Embed(
+    #             title=f"🌟 {interaction.user.display_name} 的愛寵登場！",
+    #             description=f"來看看可愛的 **{pet_name}**！",
+    #             color=discord.Color.gold()
+    #         )
             
-            if pet.get('avatar'):
-                file = discord.File(BytesIO(pet['avatar']), filename="avatar.png")
-                embed.set_thumbnail(url="attachment://avatar.png")
-            else:
-                file = None
+    #         if pet.get('avatar'):
+    #             file = discord.File(BytesIO(pet['avatar']), filename="avatar.png")
+    #             embed.set_thumbnail(url="attachment://avatar.png")
+    #         else:
+    #             file = None
 
-            embed.add_field(name="💖 好感度", value=str(pet.get("affection", 0)))
-            embed.set_footer(text=f"“{pet['description']}”")
+    #         embed.add_field(name="💖 好感度", value=str(pet.get("affection", 0)))
+    #         embed.set_footer(text=f"“{pet['description']}”")
 
-            await interaction.followup.send(embed=embed, file=file)
+    #         await interaction.followup.send(embed=embed, file=file)
 
-            webhook = await self.create_pet_webhook(interaction.channel, pet_name, pet.get("avatar"))
-            if webhook:
-                try:
-                    emoji_prefix = pet.get("avatar_emoji", "🐾")
-                    await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
-                    await webhook.delete()
-                except Exception as e:
-                    print(f"❌ 炫耀回應 Webhook 失敗: {e}")
+    #         webhook = await self.create_pet_webhook(interaction.channel, pet_name, pet.get("avatar"))
+    #         if webhook:
+    #             try:
+    #                 emoji_prefix = pet.get("avatar_emoji", "🐾")
+    #                 await webhook.send(pet_response, username=f"{emoji_prefix} {pet_name}")
+    #                 await webhook.delete()
+    #             except Exception as e:
+    #                 print(f"❌ 炫耀回應 Webhook 失敗: {e}")
             
-        await track_feature_usage(interaction.user.id, "pet")
+    #     await track_feature_usage(interaction.user.id, "pet")
 
     @app_commands.command(name="pet_thread", description="快速前往你的寵物專屬小窩")
     async def pet_thread(self, interaction: discord.Interaction):

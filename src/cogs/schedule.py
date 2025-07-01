@@ -32,7 +32,7 @@ class Schedule(commands.Cog):
 
     def _get_fancy_reply(self, lesson_name, remaining_minutes, now):
         """根據目前課程、剩餘時間和當前時間生成一個有趣的額外回覆。"""
-        user_data_manager.get_user(now.user.id)  # 確保用戶資料已載入
+        print(lesson_name)
         if now.hour == 3:
 
             additional_messages = [
@@ -102,6 +102,7 @@ class Schedule(commands.Cog):
         self, interaction: discord.Interaction
     ):
         """查詢目前課程、剩餘時間、下個課程。可選填 mmddHHMM 格式的自訂時間。"""
+        print(f"Received schedule query from {interaction.user.name} ({interaction.user.id})")
         now = datetime.datetime.now()
         custom_time = None
         if custom_time:
@@ -113,7 +114,6 @@ class Schedule(commands.Cog):
                     "請輸入正確的時間格式：`mmddHHMM`", ephemeral=True
                 )
                 return
-
         current_lesson: Lesson = None
         next_lesson: Lesson = None
 
@@ -129,7 +129,6 @@ class Schedule(commands.Cog):
         embed: discord.Embed = None
         fancy_reply = None
         remaining_minutes = 0
-
         if current_lesson:
             embed = discord.Embed(title="課表查詢", color=0x00FF00)
             embed.add_field(
@@ -163,13 +162,12 @@ class Schedule(commands.Cog):
             embed = discord.Embed(
                 title="課表查詢", description="營隊還沒開始喔！", color=0xFF0000
             )
-
         await interaction.response.send_message(
             embed = embed,
             ephemeral = True
         )
         if fancy_reply:
-            await interaction.followup.send(fancy_reply)
+            await interaction.followup.send(fancy_reply, ephemeral=True)
         if now.hour == 15:
             await interaction.user.send(
                 "`flag{||3a09986f13508c7301692eb94a4dce||}`"

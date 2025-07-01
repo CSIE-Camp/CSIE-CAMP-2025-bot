@@ -44,7 +44,7 @@ class MyGo(commands.Cog):
         """Searches for a MyGo image."""
         await self.handle_mygo_search(interaction, keyword)
         
-        user = user_data_manager.get_user(interaction.user.id)
+        user = await user_data_manager.get_user(interaction.user.id)
         mygo_date = user.get("mygo_search_date", datetime.now().date())
         mygo_times = user.get("today_mygo_search_times", 0)
         mygo_times += 1
@@ -65,7 +65,8 @@ class MyGo(commands.Cog):
             await AchievementManager.check_and_award_achievement(
                 interaction.user.id, "mygo_fan", self.bot
             )
-        
+        user["today_mygo_search_times"] = mygo_times
+        await user_data_manager.update_user_data(user_id=interaction.user.id, user_data=user)
         # 追蹤功能使用
         await AchievementManager.track_feature_usage(interaction.user.id, "mygo", self.bot)
 
