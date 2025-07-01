@@ -12,7 +12,7 @@ class GuessButtonView(discord.ui.View):
         self.channel = channel
         self.winning_button_id = str(random.randint(1, 5))
         self.is_done = False
-        for i in range(1, 6):
+        for i in range(1, 5):
             button = discord.ui.Button(
                 label=f"按鈕 {i}",
                 style=discord.ButtonStyle.secondary,
@@ -35,7 +35,7 @@ class GuessButtonView(discord.ui.View):
         for child in self.children:
             child.disabled = True
         if chosen_id == self.winning_button_id:
-            winnings = self.amount * 4
+            winnings = self.amount * 3
             user["money"] += winnings
             result_message = f"{self.player.mention} 猜對了！贏得了 {winnings} 元！"
             interaction.message.components[0].children[
