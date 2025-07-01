@@ -199,14 +199,14 @@ class Games(commands.Cog):
                     ephemeral=True,
                 )
                 return
-            view = RPSView(interaction.user, opponent, amount)
+            view = RPSView(interaction.user, opponent, amount, self.bot)
             await interaction.response.send_message(
                 f"{opponent.mention}，{interaction.user.mention} 邀請你來一場剪刀石頭布！賭注為 {amount} 元。請選擇你的出拳：\n"
                 f"⚠️ 只有 {interaction.user.mention} 和 {opponent.mention} 可以點擊按鈕！",
                 view=view,
             )
         else:
-            view = RPSView(interaction.user, self.bot.user, amount)
+            view = RPSView(interaction.user, self.bot.user, amount, self.bot)
             await interaction.response.send_message(
                 f"來跟我一決勝負吧！賭注 {amount} 元。請出拳：",
                 view=view,

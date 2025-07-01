@@ -1,17 +1,19 @@
 import random
 import discord
+from discord.ext import commands
 from src.utils.user_data import user_data_manager
 from src.utils.achievements import AchievementManager
 
 
 class RPSView(discord.ui.View):
     def __init__(
-        self, challenger: discord.Member, opponent: discord.Member, amount: int
+        self, challenger: discord.Member, opponent: discord.Member, amount: int, bot: commands.Bot
     ):
         super().__init__(timeout=60)
         self.challenger = challenger
         self.opponent = opponent
         self.amount = amount
+        self.bot = bot
         self.challenger_choice = None
         self.opponent_choice = None
 
@@ -53,7 +55,7 @@ class RPSView(discord.ui.View):
             self.stop()
             await self.determine_winner(interaction.channel)
 
-    async def determine_winner(self, channel):
+    async def determine_winner(self, channel: discord.TextChannel):
         winner = None
         loser = None
         if self.challenger_choice == self.opponent_choice:
@@ -82,12 +84,13 @@ class RPSView(discord.ui.View):
             await user_data_manager.update_user_data(loser.id, loser_data)
             full_result += f"\n{winner.mention} 贏得了 {self.amount} 元！"
             
-            # 檢查金錢成就
-            # await AchievementManager.check_money_achievements(winner.id, winner_data["money"], self.bot)
+        await channel.send(full_result, silent=True)
+        
+        # 檢查金錢成就
+        await AchievementManager.check_money_achievements(winner.id, winner_data["money"], self.bot)
         
         # 追蹤功能使用（為兩個參與者都追蹤）
-        # await AchievementManager.track_feature_usage(self.challenger.id, "game_rps", self.bot)
-        # if not self.opponent.bot:
-        #     await AchievementManager.track_feature_usage(self.opponent.id, "game_rps", self.bot)
+        await AchievementManager.track_feature_usage(self.challenger.id, "game_rps", self.bot)
+        if not self.opponent.bot:
+            await AchievementManager.track_feature_usage(self.opponent.id, "game_rps", self.bot)
 
-        await channel.send(full_result)
