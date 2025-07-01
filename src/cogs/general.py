@@ -390,5 +390,38 @@ class General(commands.Cog):
             )
         await interaction.response.send_message(embed = embed, ephemeral = True)
 
+    @app_commands.command(name = "gift", description = "送禮！免手續費！")
+    @app_commands.describe(amount = "想要送多少金額")
+    async def _gift(self, interaction: discord.Interaction, amount: int, receiver: discord.User):
+        user_data = await user_data_manager.get_user(interaction.user.id, interaction.user)
+        money = user_data["money"]
+        if money < amount:
+            await interaction.response.send_message(
+                f"你沒有足夠的錢可以用來給予！{money}/{amount}",
+                ephemeral = True
+            )
+            return
+        if not receiver or receiver.bot:
+            await interaction.response.send_message(
+                f"你只能贈送金錢給活人，不可以給 Bot",
+                ephemeral = True
+            )
+            return
+        receiver_data = await user_data_manager.get_user(receiver.id, receiver)
+        user_data["money"] -= amount
+        receiver_data["money"] += amount
+        await user_data_manager.update_user_data(interaction.user.id, user_data)
+        await user_data_manager.update_user_data(receiver.id, receiver_data)
+        await interaction.response.send_message(
+            f"{interaction.user.mention} 贈送了 {amount} 元給 {receiver.mention}",
+            silent = True
+        )
+        await AchievementManager.check_money_achievements(
+                interaction.user.id, user_data["money"], self.bot
+        )
+        await AchievementManager.check_money_achievements(
+                receiver.id, receiver_data["money"], self.bot
+        )
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))
