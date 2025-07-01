@@ -259,8 +259,8 @@ class PetSystem(commands.Cog):
         """生成所有寵物行為的定時器"""
         now = datetime.datetime.now()
         return {
-            "bad_mood": now + datetime.timedelta(seconds=random.randint(6, 9)),
-            "treasure_hunt": now + datetime.timedelta(seconds=random.randint(1,2)),
+            "bad_mood": now + datetime.timedelta(minutes=random.randint(330, 400)),
+            "treasure_hunt": now + datetime.timedelta(minutes=random.randint(700, 760)),
         }
 
     def reset_timer(self, user_id: str, timer_type: str):
@@ -269,8 +269,8 @@ class PetSystem(commands.Cog):
             self.pet_timers[user_id] = {}
         
         timer_ranges = {
-            "bad_mood": (1, 2),
-            "treasure_hunt": (1, 2),
+            "bad_mood": (330, 400),
+            "treasure_hunt": (700, 760),
         }
         
         min_time, max_time = timer_ranges.get(timer_type, (5, 10))
