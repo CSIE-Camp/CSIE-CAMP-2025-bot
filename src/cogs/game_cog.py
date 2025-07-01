@@ -1,5 +1,6 @@
 import random
 import discord
+import datetime
 from discord import app_commands
 from discord.ext import commands
 from typing import Optional
@@ -20,6 +21,27 @@ class Games(commands.Cog):
     async def _check_channel(self, interaction):
         return await check_channel(interaction)
 
+    @staticmethod
+    async def in_class_game_check(interaction: discord.Interaction, amount: int, user: dict):
+        now = datetime.datetime.now()
+        if  datetime.datetime(2025, 7, 1, 13, 30) < now < datetime.datetime(2025, 7, 1, 17, 30) or\
+            datetime.datetime(2025, 7, 2,  9, 40) < now < datetime.datetime(2025, 7, 2, 12, 10) or\
+            datetime.datetime(2025, 7, 2, 13, 30) < now < datetime.datetime(2025, 7, 2, 15,  0) or\
+            datetime.datetime(2025, 7, 2, 15, 10) < now < datetime.datetime(2025, 7, 2, 17, 40) or\
+            datetime.datetime(2025, 7, 3,  9, 40) < now < datetime.datetime(2025, 7, 3, 12, 10) or\
+            datetime.datetime(2025, 7, 3, 13, 30) < now < datetime.datetime(2025, 7, 3, 15,  0):
+            if random.randint(0, 99) != 0:
+                embed = discord.Embed(
+                    title = '被發現了…',
+                    description = f"你在上課玩賭錢被老師發現，\n所以老師贏了。\n{interaction.user.mention} 輸掉了 {amount} 元！"
+                )
+                await interaction.response.send_message(embed=embed)
+                user["money"] -= amount
+                if user["money"] < 0:
+                    user["money"] = 0
+                return True
+        return False
+
     game = app_commands.Group(name="game", description="玩各種小遊戲")
 
     @game.command(name="slot", description="拉霸遊戲")
@@ -27,8 +49,10 @@ class Games(commands.Cog):
     async def slot(self, interaction: discord.Interaction, amount: int):
         if not await self._check_channel(interaction):
             return
+        
         user = await user_data_manager.get_user(interaction.user.id, interaction.user)
         current_money = user["money"]
+        
         if amount > current_money:
             await interaction.response.send_message(
                 f"你現在只有 {current_money} 元，你卻想花 {amount} 元，我們不支援賒帳系統啦>.<",
@@ -45,6 +69,10 @@ class Games(commands.Cog):
                 "請輸入大於 0 的金額！", ephemeral=True
             )
             return
+
+        if await self.in_class_game_check(interaction, amount, user):
+            return
+        
         await interaction.response.defer()
         symbols = [
             "<:discord:1385577039838449704>",
@@ -93,6 +121,10 @@ class Games(commands.Cog):
                 "請輸入大於 0 的金額！", ephemeral=True
             )
             return
+
+        if await self.in_class_game_check(interaction, amount, user):
+            return
+        
         if opponent and not opponent.bot:
             if opponent == interaction.user:
                 await interaction.response.send_message(
@@ -111,6 +143,7 @@ class Games(commands.Cog):
                     ephemeral=True,
                 )
                 return
+            
             await interaction.response.defer()
             player_roll = random.randint(1, 6)
             opponent_roll = random.randint(1, 6)
@@ -155,7 +188,7 @@ class Games(commands.Cog):
                 await user_data_manager.update_user_data(interaction.user.id, user)
             await interaction.followup.send(result_text)
             await AchievementManager.check_money_achievements(
-					interaction.user.id, user["money"], self.bot
+                    interaction.user.id, user["money"], self.bot
             )
 
             # 追蹤功能使用
@@ -191,6 +224,10 @@ class Games(commands.Cog):
                 f"你的錢不夠下注 {amount} 元！", ephemeral=True
             )
             return
+        
+        if await self.in_class_game_check(interaction, amount, user):
+            return
+        
         if opponent and not opponent.bot:
             opponent_data = await user_data_manager.get_user(opponent.id, opponent)
             if opponent_data["money"] < amount:
@@ -231,6 +268,10 @@ class Games(commands.Cog):
                 ephemeral=True,
             )
             return
+
+        if await self.in_class_game_check(interaction, amount, user):
+            return
+        
         view = GuessButtonView(interaction.user, amount, interaction.channel, self.bot)
         await interaction.response.send_message(
             "選擇一個按鈕！", view=view, ephemeral=True
