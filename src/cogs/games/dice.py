@@ -1,8 +1,10 @@
+import discord
 import random
 from src.utils.user_data import user_data_manager
 from src.utils.achievements import achievement_manager
 
 
+# This funciton is no longer used
 def dice_game_vs_bot(user, amount):
     player_roll = random.randint(1, 6)
     bot_roll = random.randint(1, 6)
@@ -32,3 +34,17 @@ def dice_game_vs_bot(user, amount):
     elif winnings < 0:
         result_text += f"\n💸 你輸掉了 **{abs(winnings)}** 元..."
     return result_text, winnings
+
+def dice_roll(a: discord.User, b: discord.User, amount: int):
+    dice_emojis = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"]
+    rand_a = random.randint(0, 5)
+    rand_b = random.randint(0, 5)
+    msg = f'{a.mention} 擲出了 {dice_emojis[rand_a]} = **{rand_a + 1}** 點\n\
+            {b.mention} 擲出了 {dice_emojis[rand_b]} = **{rand_b + 1}** 點\n\n'
+    if rand_a > rand_b:
+        msg += f'{a.mention} 贏得了 {amount} 元！'
+    elif rand_b > rand_a:
+        msg += f'{b.mention} 贏得了 {amount} 元！'
+    else:
+        msg += '平手！'
+    return msg, rand_a - rand_b

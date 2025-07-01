@@ -9,7 +9,7 @@ from src.utils.achievements import AchievementManager
 from src.cogs.games.rps import RPSView
 from src.cogs.games.guess import GuessButtonView
 from src.cogs.games.slot import slot_game
-from src.cogs.games.dice import dice_game_vs_bot
+from src.cogs.games import dice
 from src.cogs.games.utils import check_channel
 
 
@@ -114,6 +114,7 @@ class Games(commands.Cog):
     ):
         if not await self._check_channel(interaction):
             return
+        
         user = await user_data_manager.get_user(interaction.user.id, interaction.user)
         current_money = user["money"]
         if amount <= 0:
@@ -145,35 +146,22 @@ class Games(commands.Cog):
                 return
             
             await interaction.response.defer()
-            player_roll = random.randint(1, 6)
-            opponent_roll = random.randint(1, 6)
-            dice_emojis = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"]
-            if player_roll > opponent_roll:
-                winnings = amount
-                user["money"] += winnings
-                opponent_data["money"] -= winnings
-                result_msg = f"{interaction.user.mention} 擲出 {dice_emojis[player_roll-1]}，{opponent.mention} 擲出 {dice_emojis[opponent_roll-1]}\n\n{interaction.user.mention} 贏得 {winnings} 元！"
-            elif player_roll < opponent_roll:
-                winnings = amount
-                user["money"] -= winnings
-                opponent_data["money"] += winnings
-                result_msg = f"{interaction.user.mention} 擲出 {dice_emojis[player_roll-1]}，{opponent.mention} 擲出 {dice_emojis[opponent_roll-1]}\n\n{opponent.mention} 贏得 {winnings} 元！"
-            else:
-                winnings = 0
-                result_msg = f"{interaction.user.mention} 和 {opponent.mention} 都擲出 {dice_emojis[player_roll-1]}，平手！"
+            msg, result = dice.dice_roll(interaction.user, opponent, amount)
+            if result > 0:
+                user["money"] += amount
+                opponent_data["money"] -= amount
+            elif result < 0:
+                user["money"] -= amount
+                opponent_data["money"] += amount
             await user_data_manager.update_user_data(interaction.user.id, user)
             await user_data_manager.update_user_data(opponent.id, opponent_data)
-            await interaction.followup.send(result_msg)
+            embed = discord.Embed(title = "骰子比大小結果", description = msg)
+            await interaction.followup.send(embed = embed)
             await AchievementManager.check_money_achievements(
                 interaction.user.id, user["money"], self.bot
             )
             await AchievementManager.check_money_achievements(
                 opponent.id, opponent_data["money"], self.bot
-            )
-
-            # 追蹤功能使用
-            await AchievementManager.track_feature_usage(
-                interaction.user.id, "game_dice", self.bot
             )
         else:
             if current_money < amount:
@@ -183,18 +171,22 @@ class Games(commands.Cog):
                 )
                 return
             await interaction.response.defer()
-            result_text, winnings = dice_game_vs_bot(user, amount)
-            if winnings != 0:
+            msg, result = dice.dice_roll(interaction.user, self.bot.user, amount)
+            if result > 0:
+                user["money"] += amount
+            elif result < 0:
+                user["money"] -= amount
+            if result != 0:
                 await user_data_manager.update_user_data(interaction.user.id, user)
-            await interaction.followup.send(result_text)
+            embed = discord.Embed(title = "骰子比大小結果", description = msg)
+            await interaction.followup.send(embed = embed)
             await AchievementManager.check_money_achievements(
                     interaction.user.id, user["money"], self.bot
             )
-
-            # 追蹤功能使用
-            await AchievementManager.track_feature_usage(
-                interaction.user.id, "game_dice", self.bot
-            )
+        # 追蹤功能使用
+        await AchievementManager.track_feature_usage(
+            interaction.user.id, "game_dice", self.bot
+        )
 
     @game.command(name="rps", description="剪刀石頭布")
     @app_commands.describe(amount="賭注金額", opponent="挑戰的對手")
