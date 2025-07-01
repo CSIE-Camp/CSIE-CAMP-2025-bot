@@ -1,15 +1,17 @@
 import random
 import discord
+from discord.ext import commands
 from src.utils.user_data import user_data_manager
 from src.utils.achievements import achievement_manager
 
 
 class GuessButtonView(discord.ui.View):
-    def __init__(self, player: discord.Member, amount: int, channel):
+    def __init__(self, player: discord.Member, amount: int, channel, bot: commands.Bot):
         super().__init__(timeout=60)
         self.player = player
         self.amount = amount
         self.channel = channel
+        self.bot = bot
         self.winning_button_id = str(random.randint(1, 5))
         self.is_done = False
         for i in range(1, 5):
@@ -57,5 +59,5 @@ class GuessButtonView(discord.ui.View):
         await interaction.response.edit_message(view=self)
         await self.channel.send(result_message)
         await achievement_manager.check_money_achievements(
-            self.player.id, user["money"], interaction
+            self.player.id, user["money"], self.bot
         )

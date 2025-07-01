@@ -107,7 +107,7 @@ class DailyCheckin(commands.Cog):
         await user_data_manager.update_user_data(user_id, user)
 
         # 檢查成就
-        await self._check_achievements(user_id, new_streak, user["money"], interaction)
+        await self._check_achievements(user_id, new_streak, user["money"], self.bot)
 
         # 建立簽到結果嵌入訊息
         embed = discord.Embed(
@@ -191,19 +191,19 @@ class DailyCheckin(commands.Cog):
         return await generate_image(quote)
 
     async def _check_achievements(
-        self, user_id: int, streak: int, money: int, interaction: discord.Interaction
+        self, user_id: int, streak: int, money: int, bot: commands.Bot
     ):
         """檢查並觸發相關成就"""
         try:
             # 檢查連續簽到成就
             if streak >= 7:
                 await AchievementManager.check_and_award_achievement(
-                    user_id, "lucky_streak", interaction
+                    user_id, "lucky_streak", bot
                 )
 
             # 檢查金錢成就
             await AchievementManager.check_money_achievements(
-                user_id, money, interaction
+                user_id, money, bot
             )
         except (AttributeError, KeyError) as e:
             print(f"⚠️ 檢查成就時出錯: {e}")

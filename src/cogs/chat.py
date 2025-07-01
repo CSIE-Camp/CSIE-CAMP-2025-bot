@@ -64,7 +64,7 @@ class Chat(commands.Cog):
             new_streak = 1
 
         if new_streak == 4:
-            achievement_manager.unlock_achievement(user_id, "daily", self.bot)
+            await achievement_manager.check_and_award_achievement(user_id, "daily", self.bot)
 
     
 

@@ -132,7 +132,7 @@ class Games(commands.Cog):
             await user_data_manager.update_user_data(opponent.id, opponent_data)
             await interaction.followup.send(result_msg)
             await AchievementManager.check_money_achievements(
-                interaction.user.id, user["money"], interaction
+                interaction.user.id, user["money"], self.bot
             )
             await AchievementManager.check_money_achievements(
                 opponent.id, opponent_data["money"], self.bot
@@ -231,7 +231,7 @@ class Games(commands.Cog):
                 ephemeral=True,
             )
             return
-        view = GuessButtonView(interaction.user, amount, interaction.channel)
+        view = GuessButtonView(interaction.user, amount, interaction.channel, self.bot)
         await interaction.response.send_message(
             "選擇一個按鈕！", view=view, ephemeral=True
         )
