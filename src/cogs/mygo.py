@@ -80,7 +80,29 @@ class MyGo(commands.Cog):
                 return
 
             quote = random.choice(self.mygo_quotes)
-            await interaction.response.send_message(f"💭 {quote}")
+            image_url = quote['url']
+            image_alt = quote['alt']
+            if 'ave-mujica' in image_url:
+                async with aiohttp.ClientSession() as sess:
+                    async with sess.get(image_url) as resp:
+                        if resp.status != 200:
+                            return await send('讀取失敗')
+                        data = await resp.read()
+                random_color = random.randint(0, 0xFFFFFF)
+                file = discord.File(fp=io.BytesIO(data), filename="image.webp")
+                embed = discord.Embed(description=image_alt, color=random_color, timestamp=datetime.now())
+                embed.set_image(url="attachment://image.webp")
+                embed.set_footer(text="ave-mujica 廚 in.")
+                await interaction.response.send_message('你覺得這張如何💭',embed=embed, file=file)
+                return
+            else:
+                random_color = random.randint(0, 0xFFFFFF)
+                embed = discord.Embed(description=image_alt, color=random_color, timestamp=datetime.now())
+                embed.set_image(url=image_url)
+                embed.set_footer(text="mygo 廚 in.")
+                await interaction.response.send_message('你覺得這張如何💭',embed=embed)
+                return
+            await interaction.response.send_message(f" {quote}")
         except Exception as e:
             print(f"Quote 命令錯誤: {e}")
             await interaction.response.send_message(
