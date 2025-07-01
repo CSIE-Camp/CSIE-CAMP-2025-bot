@@ -220,7 +220,7 @@ class MyGo(commands.Cog):
 
             # --- If no direct match, show searching message and proceed to LLM fallbacks ---
             status_message = await send(
-                f"我沒找到包含{keyword}這段話的圖片誒，還是你是說這張呢？"
+                f"我沒找到包含「{keyword}」這段話的圖片誒，還是你是說這張呢？"
             )
 
             if not self.model or not self.mygo_quotes:
