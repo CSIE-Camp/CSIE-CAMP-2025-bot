@@ -47,6 +47,7 @@ class MyGo(commands.Cog):
         user = user_data_manager.get_user(interaction.user.id)
         mygo_date = user.get("mygo_search_date", datetime.now().date())
         mygo_times = user.get("today_mygo_search_times", 0)
+        mygo_times += 1
         if mygo_date != datetime.now().date():
             # Reset daily search count if it's a new day
             user["mygo_search_date"] = datetime.now().date()
