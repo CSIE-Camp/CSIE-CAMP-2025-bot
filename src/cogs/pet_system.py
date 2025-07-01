@@ -923,19 +923,19 @@ class PetSystem(commands.Cog):
         for i, (user_id, pet) in enumerate(sorted_pets[:10]):
             try:
                 user = await self.bot.fetch_user(int(user_id))
-                user_name = user.display_name
+                user_name = user.mention
             except:
                 user_name = "未知用戶"
             
             rank_emoji = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
             emoji = rank_emoji[i] if i < len(rank_emoji) else f"**#{i+1}**"
-            description += f"{emoji} **{pet['name']}** (主人: {user_name}) - {pet.get('affection', 0)} 好感度\n"
+            description += f"{emoji} **{pet['name']}**（主人：{user_name}） - {pet.get('affection', 0)} 好感度\n"
 
         if not description:
             description = "還沒有任何寵物可以排名。"
             
         embed.description = description
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, silent=True)
         await track_feature_usage(interaction.user.id, "pet_ranking")
 
     # @app_commands.command(name="show_off_pet", description="在公共頻道炫耀你的寵物")
