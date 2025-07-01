@@ -7,6 +7,7 @@ from typing import Optional
 from src.utils.user_data import user_data_manager
 from src.utils.achievements import AchievementManager
 from src.cogs.games.rps import RPSView
+from src.cogs.games.dice import DiceView
 from src.cogs.games.guess import GuessButtonView
 from src.cogs.games.slot import slot_game
 from src.cogs.games import dice
@@ -145,23 +146,11 @@ class Games(commands.Cog):
                 )
                 return
             
-            await interaction.response.defer()
-            msg, result = dice.dice_roll(interaction.user, opponent, amount)
-            if result > 0:
-                user["money"] += amount
-                opponent_data["money"] -= amount
-            elif result < 0:
-                user["money"] -= amount
-                opponent_data["money"] += amount
-            await user_data_manager.update_user_data(interaction.user.id, user)
-            await user_data_manager.update_user_data(opponent.id, opponent_data)
-            embed = discord.Embed(title = "骰子比大小結果", description = msg)
-            await interaction.followup.send(embed = embed)
-            await AchievementManager.check_money_achievements(
-                interaction.user.id, user["money"], self.bot
-            )
-            await AchievementManager.check_money_achievements(
-                opponent.id, opponent_data["money"], self.bot
+            view = DiceView(interaction.user, opponent, amount, interaction.channel, self.bot)
+            await interaction.response.send_message(
+                f"{opponent.mention}，{interaction.user.mention} 邀請你來一場骰子比大小！賭注為 {amount} 元。請確認是否接受對決：\n"
+                f"⚠️ 只有 {opponent.mention} 可以點擊按鈕！",
+                view=view,
             )
         else:
             if current_money < amount:
