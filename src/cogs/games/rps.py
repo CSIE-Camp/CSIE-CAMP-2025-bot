@@ -82,13 +82,21 @@ class RPSView(discord.ui.View):
             loser_data["money"] -= self.amount
             await user_data_manager.update_user_data(winner.id, winner_data)
             await user_data_manager.update_user_data(loser.id, loser_data)
-            full_result += f"\n{winner.mention} 贏得了 {self.amount} 元！"
-            
-        await channel.send(full_result, silent=True)
+            if not winner.bot:
+                full_result += f"\n{winner.mention} 贏得了 {self.amount} 元！"
+            else:
+                full_result += f"\n{loser.mention} 輸掉了 {self.amount} 元！"
+        embed = discord.Embed(
+            title = "猜拳結果",
+            description = full_result
+        )
+        await channel.send(embed = embed, silent = True)
         
         # 檢查金錢成就
-        await AchievementManager.check_money_achievements(winner.id, winner_data["money"], self.bot)
-        
+        for user, data in ((winner, winner_data), (loser, loser_data)):
+            if not user.bot:
+                await AchievementManager.check_money_achievements(user.id, data["money"], self.bot)
+
         # 追蹤功能使用（為兩個參與者都追蹤）
         await AchievementManager.track_feature_usage(self.challenger.id, "game_rps", self.bot)
         if not self.opponent.bot:

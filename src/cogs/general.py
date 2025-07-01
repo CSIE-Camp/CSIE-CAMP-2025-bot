@@ -124,8 +124,9 @@ class General(commands.Cog):
 
         # 追蹤功能使用並檢查成就
         await AchievementManager.track_feature_usage(target.id, "profile", self.bot)
-        if show:
-            await AchievementManager.check_money_achievements(target.id, money, self.bot)
+        await AchievementManager.check_money_achievements(target.id, money, self.bot)
+        if show and money >= 10000:
+            await AchievementManager.check_and_award_achievement(target.id, "rich_player", self.bot)
 
     def _calculate_required_exp(self, level: int) -> int:
         """計算升級所需經驗值"""

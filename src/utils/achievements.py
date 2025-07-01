@@ -136,10 +136,10 @@ class AchievementManager:
     @staticmethod
     async def check_money_achievements(user_id: int, current_money: int, ctx: commands.Bot | commands.Context = None):
         """檢查金錢相關成就"""
-        if current_money >= 10000:
+        if current_money <= 0:
             await AchievementManager.check_and_award_achievement(
-                user_id, "rich_player", ctx
-            )
+                user_id, "poor_player", ctx
+			)
 
     @staticmethod
     async def check_slot_achievements(user_id: int, max_count: int, ctx=None):

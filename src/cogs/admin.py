@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from src.utils.achievements import AchievementManager
 from src.utils.user_data import user_data_manager
 from src.constants import Emojis, Colors
 from src import config
@@ -307,6 +308,7 @@ class Admin(commands.Cog):
             f"原有金錢: {old_money} 元 → 現有金錢: {user_data['money']} 元",
             ephemeral=True,
         )
+        await AchievementManager.check_money_achievements(user.id, user_data_manager['money'], self.bot)
 
     @commands.Cog.listener()
     async def on_app_command_error(
