@@ -264,7 +264,7 @@ class MyGo(commands.Cog):
                         if status_message:
                             await edit_message(
                                 status_message,
-                                f"沒有找到「{keyword}」，但我找到了這個，應該差不多吧？\n> {closest_quote}",
+                                f"沒有找到「{keyword}」，但我找到了這個，應該差不多吧？\n",
                             )
                         match2 = random.choice(matches2)
                         image_url_2 = match2["url"]
@@ -287,7 +287,7 @@ class MyGo(commands.Cog):
                             embed.set_image(url="attachment://image.webp")
                             embed.set_footer(text="ave-mujica 廚 in.")
                             await send(
-                                f"沒有找到「{keyword}」，但我找到了這個，應該差不多吧？\n> {closest_quote}",
+                                f"沒有找到「{keyword}」，但我找到了這個，應該差不多吧？\n",
                                 embed=embed,
                                 file=file,
                             )
