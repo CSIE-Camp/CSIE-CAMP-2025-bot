@@ -71,7 +71,7 @@ class Games(commands.Cog):
             )
             return
 
-        if await self.in_class_game_check(interaction, amount, user):
+        if await self.in_class_game_check(interaction, amount * 2, user):
             return
         
         await interaction.response.defer()
@@ -124,7 +124,7 @@ class Games(commands.Cog):
             )
             return
 
-        if await self.in_class_game_check(interaction, amount, user):
+        if await self.in_class_game_check(interaction, amount * 2, user):
             return
         
         if opponent and not opponent.bot:
@@ -207,7 +207,7 @@ class Games(commands.Cog):
             return
         
         user = await user_data_manager.get_user(interaction.user.id, interaction.user)
-        if await self.in_class_game_check(interaction, amount, user):
+        if await self.in_class_game_check(interaction, amount * 2, user):
             return
         
         if opponent and not opponent.bot:
@@ -251,7 +251,7 @@ class Games(commands.Cog):
             )
             return
 
-        if await self.in_class_game_check(interaction, amount, user):
+        if await self.in_class_game_check(interaction, amount * 2, user):
             return
         
         view = GuessButtonView(interaction.user, amount, interaction.channel, self.bot)
