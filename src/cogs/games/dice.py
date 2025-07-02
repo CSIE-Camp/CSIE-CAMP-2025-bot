@@ -89,7 +89,7 @@ def dice_roll(a: discord.User, b: discord.User, amount: int):
     rand_a = random.randint(0, 5)
     rand_b = random.randint(0, 5)
     msg = f'{a.mention} 擲出了 {dice_emojis[rand_a]} = **{rand_a + 1}** 點\n\
-            {b.mention} 擲出了 {dice_emojis[rand_b]} = **{rand_b + 1}** 點\n\n'
+{b.mention} 擲出了 {dice_emojis[rand_b]} = **{rand_b + 1}** 點\n\n'
     if rand_a > rand_b:
         msg += f'{a.mention} 贏得了 {amount} 元！'
     elif rand_b > rand_a:
