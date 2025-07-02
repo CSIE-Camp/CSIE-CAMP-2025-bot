@@ -7,7 +7,7 @@ from discord.ext import commands
 
 from src.utils.prompt import BOT_PROMPT
 from src.utils.llm import llm_model
-from datetime import datetime
+import datetime
 
 from src.utils.achievements import achievement_manager
 from src.utils.user_data import user_data_manager
@@ -27,9 +27,20 @@ class Chat(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """Listen for mentions."""
+        now = datetime.datetime.now()
         if message.author.bot:
             return
-
+        if  datetime.datetime(2025, 7, 1, 13, 30) < now < datetime.datetime(2025, 7, 1, 17, 30) or\
+            datetime.datetime(2025, 7, 2,  9, 40) < now < datetime.datetime(2025, 7, 2, 12, 10) or\
+            datetime.datetime(2025, 7, 2, 13, 30) < now < datetime.datetime(2025, 7, 2, 15,  0) or\
+            datetime.datetime(2025, 7, 2, 15, 10) < now < datetime.datetime(2025, 7, 2, 17, 40) or\
+            datetime.datetime(2025, 7, 3,  9, 40) < now < datetime.datetime(2025, 7, 3, 12, 10) or\
+            datetime.datetime(2025, 7, 3, 13, 30) < now < datetime.datetime(2025, 7, 3, 15,  0):
+            await message.channel.send('再不專心上課，我要生氣氣囉 ><\n你因為上課不專心不小心弄丟了 10 元')
+            user_data = await user_data_manager.get_user(message.author.id, message.author)
+            user_data["money"] -= 10
+            await user_data_manager.update_user_data(message.author.id, user_data)
+            return 
         if self.model and self.bot.user in message.mentions:
             # Check for cooldown
             bucket = self._cd.get_bucket(message)
