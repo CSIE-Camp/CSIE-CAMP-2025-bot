@@ -12,6 +12,8 @@ import discord
 from discord.ext import commands
 import aiohttp
 from typing import Dict, Any
+import datetime
+from src.utils.user_data import user_data_manager
 
 from src import config
 from src.utils.prompt import STYLE_PROMPTS
@@ -73,7 +75,21 @@ class StyleTransfer(commands.Cog):
         # 檢查是否為風格轉換頻道
         if message.channel.id not in self.style_mapping:
             return
-
+        now = datetime.datetime.now()
+        if  datetime.datetime(2025, 7, 1, 13, 30) < now < datetime.datetime(2025, 7, 1, 17, 30) or\
+            datetime.datetime(2025, 7, 2,  9, 40) < now < datetime.datetime(2025, 7, 2, 12, 10) or\
+            datetime.datetime(2025, 7, 2, 13, 30) < now < datetime.datetime(2025, 7, 2, 15,  0) or\
+            datetime.datetime(2025, 7, 2, 15, 10) < now < datetime.datetime(2025, 7, 2, 17, 40) or\
+            datetime.datetime(2025, 7, 3,  9, 40) < now < datetime.datetime(2025, 7, 3, 12, 10) or\
+            datetime.datetime(2025, 7, 3, 13, 30) < now < datetime.datetime(2025, 7, 3, 15,  0):
+            await message.channel.send('再不專心上課，我要生氣氣囉 ><\n你因為上課不專心不小心弄丟了 10 元')
+            user_data = await user_data_manager.get_user(message.author.id, message.author)
+            user_data["money"] -= 10
+            if user_data["money"] < 0:
+                user_data["money"] = 0
+            await user_data_manager.update_user_data(message.author.id, user_data)
+            return 
+        
         # 檢查冷卻時間
         bucket = self._cooldown.get_bucket(message)
         retry_after = bucket.update_rate_limit()
