@@ -395,6 +395,12 @@ class General(commands.Cog):
     async def _gift(self, interaction: discord.Interaction, amount: int, receiver: discord.User):
         user_data = await user_data_manager.get_user(interaction.user.id, interaction.user)
         money = user_data["money"]
+        if amount < 0:
+            await interaction.response.send_message(
+                f"還想要偷別人的錢啊！\n`flag{{||60f2ea488d296e2f2f079d00e713e6||}}`",
+                ephemeral = True
+            )
+            return
         if money < amount:
             await interaction.response.send_message(
                 f"你沒有足夠的錢可以用來給予！{money}/{amount}",
