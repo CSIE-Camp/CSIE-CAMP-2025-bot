@@ -200,6 +200,7 @@ class AchievementManager:
         - links: 查看連結
         - achievements: 查看成就
         - egg: 查看彩蛋
+        - gift: 贈與
         """
         user = await user_data_manager.get_user(user_id)
         used_features = user.get("used_features", [])
@@ -216,6 +217,7 @@ class AchievementManager:
             "links",  # 查看連結
             "achievements",  # 查看成就
             "egg",  # 查看彩蛋
+            "gift",  # 贈與
         }
 
         # 檢查是否使用了所有必要功能

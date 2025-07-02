@@ -297,6 +297,7 @@ class General(commands.Cog):
             name="💰 遊戲與經濟",
             value=f"""
 /checkin — 每日簽到抽運勢，獲得金錢、隨機引言與圖片
+/gift <金額> <對象> - 贈與對方一定量的金錢
 /game slot <金額> — 拉霸遊戲
 /game dice <金額> — 骰子比大小
 /game rps <金額> <選項> — 剪刀石頭布
@@ -421,6 +422,9 @@ class General(commands.Cog):
         await interaction.response.send_message(
             f"{interaction.user.mention} 贈送了 {amount} 元給 {receiver.mention}",
             silent = True
+        )
+        await AchievementManager.track_feature_usage(
+            interaction.user.id, "gift", self.bot
         )
         await AchievementManager.check_money_achievements(
                 interaction.user.id, user_data["money"], self.bot
