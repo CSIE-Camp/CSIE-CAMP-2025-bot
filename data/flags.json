@@ -12,6 +12,7 @@
 "flag{||4db02ceb09e30901cd50b6e25dbabf||}": {"狀態": "已使用", "id": 16, "flag": "flag{||4db02ceb09e30901cd50b6e25dbabf||}", "amount": 3.0, "name": "叫我樹懶"},
 "flag{||5a00a18aa92ca1924460883b011ade||}": {"狀態": "已使用", "id": 18, "flag": "flag{||5a00a18aa92ca1924460883b011ade||}", "amount": 3.0, "name": "三二一鋼鐵人"},
 "flag{||4337c117221c114a905228198d2eea||}": {"狀態": "已使用", "id": 22, "flag": "flag{||4337c117221c114a905228198d2eea||}", "amount": 3.0, "name": "原來這裡還有人"},
+"flag{||f7e5a5f3d14aecf1ff4512ea70adb7||}": {"狀態": "已使用", "id": 23, "flag": "flag{||f7e5a5f3d14aecf1ff4512ea70adb7||}", "amount": 3.0, "name": "想不到吧"},
 "flag{||Wh@tDo3$TheF0x$ay||}": {"狀態": "已使用", "id": 31, "flag": "flag{||Wh@tDo3$TheF0x$ay||}", "amount": 3.0, "name": "你說什麼？狐狸是狼？！！"},
 "flag{||y0u_f!n?_m3||}": {"狀態": "已使用", "id": 32, "flag": "flag{||y0u_f!n?_m3||}", "amount": 3.0, "name": "你找到我了"},
 "flag{||take_it_yourself||}": {"狀態": "已使用", "id": 33, "flag": "flag{||take_it_yourself||}", "amount": 8.0, "name": "自己拿"},

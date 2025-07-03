@@ -414,6 +414,12 @@ class General(commands.Cog):
                 ephemeral = True
             )
             return
+        if interaction.user == receiver:
+            await interaction.response.send_message(
+                f"你不能送錢給自己來洗版",
+                ephemeral = True
+            )
+            return
         receiver_data = await user_data_manager.get_user(receiver.id, receiver)
         user_data["money"] -= amount
         receiver_data["money"] += amount
