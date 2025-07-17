@@ -120,7 +120,7 @@
 
 ### 安裝與啟動
 
-1.  **克隆專案**
+1.  **複製專案**
 
     ```bash
     git clone https://github.com/your-username/camp-public-bot.git
